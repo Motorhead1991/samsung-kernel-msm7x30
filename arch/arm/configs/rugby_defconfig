@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
 # Linux kernel version: 2.6.35.14
-# Tue Aug 21 21:02:19 2012
+# Tue Aug 21 23:13:00 2012
 #
 CONFIG_ARM=y
 CONFIG_SYS_SUPPORTS_APM_EMULATION=y
@@ -1816,7 +1816,7 @@ CONFIG_LCD_CLASS_DEVICE=y
 # CONFIG_LCD_TDO24M is not set
 # CONFIG_LCD_VGG2432A4 is not set
 # CONFIG_LCD_PLATFORM is not set
-# CONFIG_LCD_S6E63M0 is not set
+CONFIG_LCD_S6E63M0=y
 CONFIG_BACKLIGHT_CLASS_DEVICE=y
 # CONFIG_BACKLIGHT_GENERIC is not set
 # CONFIG_BACKLIGHT_ADP8860 is not set
