@@ -88,11 +88,17 @@
 #include <linux/msm_kgsl.h>
 #include <mach/dal_axi.h>
 #include <mach/msm_serial_hs.h>
-#include <mach/msm_reqs.h>
+#include <mach/bcm_bt_lpm.h>
 #ifdef CONFIG_SENSORS_AK8975
 #include <linux/i2c/ak8975.h>
 #endif
 
+/*
+ * sec input bridge for apatch ramdump
+ */
+#ifdef CONFIG_INPUT_SECBRIDGE
+#include <linux/input/sec-input-bridge.h>
+#endif
 
 /* 2011-06-20 hyeokseon.yu */
 #ifdef CONFIG_CHARGER_SMB328A
@@ -166,9 +172,9 @@ EXPORT_SYMBOL(sec_class);
 struct device *switch_dev;
 EXPORT_SYMBOL(switch_dev);
 
-#define MSM_PMEM_SF_SIZE	0x1E00000	// MM team, QC request
-#define MSM_FB_SIZE			0xA46000	// ARGB8888 double duffrting
-#define MSM_PMEM_ADSP_SIZE      0x1E20000 // MM team request (before 0x1CD0000)
+#define MSM_PMEM_SF_SIZE	0x1F00000	// MM team, QC request
+#define MSM_FB_SIZE			(0xA46000-0x523000)	// ARGB8888 double duffrting
+#define MSM_PMEM_ADSP_SIZE      (0x1E20000+0x523000) // MM team request (before 0x1CD0000)
 #define MSM_FLUID_PMEM_ADSP_SIZE	0x2800000
 #define PMEM_KERNEL_EBI1_SIZE   0x600000
 #define MSM_PMEM_AUDIO_SIZE     0x200000
@@ -289,19 +295,19 @@ static struct sec_jack_buttons_zone sec_jack_buttons_zones[] = {
 		/* 0 <= adc <=150, stable zone */
 		.code		= KEY_MEDIA,
 		.adc_low	= 0,
-		.adc_high	= 150,
+		.adc_high	= 165,
 	},
 	{
 		/* 151 <= adc <= 340, stable zone */
 		.code		= KEY_VOLUMEUP,
-		.adc_low	= 151,
-		.adc_high	= 340,
+		.adc_low	= 166,
+		.adc_high	= 335,
 	},
 	{
 		/* 341 <= adc <= 690, stable zone */
 		.code		= KEY_VOLUMEDOWN,
-		.adc_low	= 341,
-		.adc_high	= 690,
+		.adc_low	= 336,
+		.adc_high	= 670,
 	},
 };
 #endif
@@ -681,6 +687,7 @@ static int pm8058_gpios_init(void)
 	if (rc) {
 		pr_err("%s PMIC_GPIO_LCD_ESD_DET config failed\n", __func__);
 		return rc;
+	}
 #endif
 /* 2011-06-27 hyeokseon.yu */
 #ifdef CONFIG_CHARGER_SMB328A
@@ -978,6 +985,37 @@ static int pm8058_pwm_enable(struct pwm_device *pwm, int ch, int on)
 	}
 	return rc;
 }
+
+#ifdef CONFIG_INPUT_SECBRIDGE
+/*
+ * sec-input-bridge
+ */
+static const struct sec_input_bridge_mkey apatch_mkey_map[] = {
+    { .type = EV_KEY, .code = KEY_VOLUMEUP      },
+    { .type = EV_KEY, .code = KEY_HOME          },
+    { .type = EV_KEY, .code = KEY_VOLUMEDOWN    },
+    { .type = EV_KEY, .code = KEY_VOLUMEUP      },
+    { .type = EV_KEY, .code = KEY_HOME          },
+    { .type = EV_KEY, .code = KEY_VOLUMEDOWN    },
+    { .type = EV_KEY, .code = KEY_VOLUMEUP      },
+    { .type = EV_KEY, .code = KEY_HOME          },
+    { .type = EV_KEY, .code = KEY_VOLUMEDOWN    },
+};
+
+static struct sec_input_bridge_platform_data apatch_input_bridge_data = {
+
+    .mkey_map   = apatch_mkey_map,
+    .num_mkey    = ARRAY_SIZE(apatch_mkey_map),
+}; 
+
+static struct platform_device apatch_input_bridge = {
+    .name   = "samsung_input_bridge",
+    .id     = -1,
+    .dev    = {
+        .platform_data = &apatch_input_bridge_data,
+    },
+};
+#endif
 
 static const unsigned int ancora_keymap[] = {
 	KEY(0, 0, KEY_RESERVED),
@@ -1378,8 +1416,7 @@ GPIO_CFG(1, 0, GPIO_CFG_OUTPUT, GPIO_CFG_PULL_UP, GPIO_CFG_2MA), /* VCM */
 };
 
 static uint32_t camera_on_gpio_table[] = {
-#if defined (CONFIG_SENSOR_CE147) || defined (CONFIG_SENSOR_S5K5CCAF) ||\
-    defined (CONFIG_SENSOR_S5K4ECGX) || defined (CONFIG_SENSOR_SR130PC10)
+#if defined (CONFIG_SENSOR_CE147) || defined (CONFIG_SENSOR_S5K4ECGX) || defined (CONFIG_SENSOR_S5K5CCAF)
 #if !defined (CONFIG_USE_QUP_I2C)
 	GPIO_CFG(0, 0, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL, GPIO_CFG_16MA),	/* CAM_SCL */
 	GPIO_CFG(1, 0, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL, GPIO_CFG_16MA),	/* CAM_SDA */
@@ -1620,30 +1657,7 @@ static struct platform_device msm_camera_sensor_s5k4ecgx = {
         },   
 };
 #endif
-#ifdef CONFIG_SENSOR_SR130PC10
-static struct msm_camera_sensor_flash_data flash_sr130pc10 = {
-	.flash_type = MSM_CAMERA_FLASH_NONE,
-	.flash_src  = &msm_flash_src_pwm
-};
-static struct msm_camera_sensor_info msm_camera_sensor_sr130pc10_data = {
-        .sensor_name	= "sr130pc10",
-        .sensor_reset	= 0, 
-        .sensor_pwd		= 0, 
-        .vcm_pwd		= 0, 
-        .pdata			= &msm_camera_device_data,
-        .resource       = msm_camera_resources,
-        .num_resources  = ARRAY_SIZE(msm_camera_resources),      
-        .flash_data		= &flash_sr130pc10,
-        .csi_if         = 0        
-};
 
-static struct platform_device msm_camera_sensor_sr130pc10 = {
-        .name      = "msm_camera_sr130pc10",
-        .dev       = {  
-                .platform_data = &msm_camera_sensor_sr130pc10_data,
-        },   
-};
-#endif
 #if defined (CONFIG_SENSOR_CE147)
 static struct msm_camera_sensor_flash_data flash_ce147 = {
 //	.flash_type = MSM_CAMERA_FLASH_LED,
@@ -2024,25 +2038,25 @@ static struct snd_set_ampgain init_ampgain[] = {
 	[0] = {
 		.in1_gain = 2,
 		.in2_gain = 2,
-		.hp_att = 27,
-		.hp_gainup = 2,
-		.sp_att = 25,
+		.hp_att = 30,
+		.hp_gainup = 0,
+		.sp_att = 29,
 		.sp_gainup = 0,
 	},
 	[1] = { /* [HSS] headset_call, speaker_call */
 		.in1_gain = 2,
-		.in2_gain = 0,
-		.hp_att = 31,
-		.hp_gainup = 3,
+		.in2_gain = 2,
+		.hp_att = 25,
+		.hp_gainup = 0,
 		.sp_att = 31,
 		.sp_gainup = 0,
 	},
 	[2] = { /* [HSS] headset_speaker */
 		.in1_gain = 5,
 		.in2_gain = 0,
-		.hp_att = 5,
+		.hp_att = 10,
 		.hp_gainup = 0,
-		.sp_att = 31,
+		.sp_att = 29,
 		.sp_gainup = 2,
 	},
 };
@@ -2098,11 +2112,6 @@ void msm_snddev_tx_ear_route_config(void)
 {
 	pr_debug("%s()\n", __func__);
 	gpio_set_value_cansleep(PM8058_GPIO_PM_TO_SYS(PMIC_GPIO_EAR_MICBIAS_EN), 1);
-	
-#ifdef CONFIG_VP_A2220  // mdhwang_Test
-	gpio_set_value_cansleep(PM8058_GPIO_PM_TO_SYS(PMIC_GPIO_MICBIAS_EN), 1);
-#endif
-
 #ifdef CONFIG_SAMSUNG_JACK
 	tx_set_flag = 1;
 #endif
@@ -2114,11 +2123,6 @@ void msm_snddev_tx_ear_route_deconfig(void)
 	pr_debug("%s()\n", __func__);
 	if ( ! ( ( sec_jack_get_det_jack_state() ) && (!sec_jack_get_send_key_state()) ) )
 		gpio_set_value_cansleep(PM8058_GPIO_PM_TO_SYS(PMIC_GPIO_EAR_MICBIAS_EN), 0);
-		
-#ifdef CONFIG_VP_A2220  // mdhwang_Test
-	gpio_set_value_cansleep(PM8058_GPIO_PM_TO_SYS(PMIC_GPIO_MICBIAS_EN), 0);
-#endif
-
 #ifdef CONFIG_SAMSUNG_JACK
 	tx_set_flag = 0;
 #endif
@@ -2412,168 +2416,6 @@ int mi2s_unconfig_clk_gpio(void)
 	return 0;
 }
 
-#ifdef CONFIG_VP_A2220
-extern int a2220_ioctl2(unsigned int cmd , unsigned long arg);
-void msm_snddev_audience_call_route_config(void)
-{
-	pr_info("%s()\n", __func__);
-
-	//msm_snddev_call_route_config();
-	gpio_set_value(GPIO_AUDIECNE_A2220_SWITCH, 0);
-
-	a2220_ioctl2(A2220_SET_CONFIG , A2220_PATH_INCALL_RECEIVER);	
-
-	return;
-}
-void msm_snddev_audience_call_route_deconfig(void)
-{
-	pr_info("%s()\n", __func__);
-
-	//msm_snddev_call_route_deconfig();
-	gpio_set_value(GPIO_AUDIECNE_A2220_SWITCH, 1);
-	a2220_ioctl2(A2220_SET_CONFIG , A2220_PATH_SUSPEND);	
-
-#ifdef AUDIENCE_BYPASS //(+)dragonball Multimedia bypass
-	//if(get_hw_rev() < 0x05)
-	if (1)
-	{
-		mdelay(5);
-		a2220_ioctl2(A2220_SET_CONFIG , A2220_PATH_BYPASS_MULTIMEDIA);
-	}
-#endif	
-
-	return;
-}
-
-void msm_snddev_audience_call_route_speaker_config(void)
-{
-	pr_info("%s()\n", __func__);
-
-	//msm_snddev_call_route_config();
-	gpio_set_value(GPIO_AUDIECNE_A2220_SWITCH, 0); //switch  to I2S audience
-
-	//a2220_ioctl2(A2220_SET_CONFIG , A2220_PATH_INCALL_RECEIVER);	
-	a2220_ioctl2(A2220_SET_CONFIG , A2220_PATH_INCALL_SPEAKER);	
-
-	return;
-}
-void msm_snddev_audience_call_route_speaker_deconfig(void)
-{
-	pr_info("%s()\n", __func__);
-
-	//msm_snddev_call_route_deconfig();
-	// ysseo 20110420 : to use a2220 Multimedia mode
-	gpio_set_value(GPIO_AUDIECNE_A2220_SWITCH, 1); //switch  to I2S QTR
-	a2220_ioctl2(A2220_SET_CONFIG , A2220_PATH_SUSPEND);	
-	
-#ifdef AUDIENCE_BYPASS
-	//if(get_hw_rev() < 0x05)
-	if (1)
-	{
-		mdelay(5);
-		a2220_ioctl2(A2220_SET_CONFIG , A2220_PATH_BYPASS_MULTIMEDIA);
-	}
-#endif	
-
-	return;
-}
-
-int msm_snddev_audience_speaker_on(void)
-{
-	msm_snddev_audience_call_route_speaker_config();
-
-	pr_info("%s: enable msm_snddev_audience_speaker_on\n", __func__);
-
-	//if (atomic_inc_return(&pamp_ref_cnt) > 1)
-	//	return 0;
-
-	pr_debug("%s: enable stereo spkr amp\n", __func__);
-
-#ifdef CONFIG_SENSORS_YDA165
-	//yda165_speaker_onoff(1); // mdhwang_test
-	yda165_speaker_call_onoff(1);
-#endif
-
-	return 0;
-}
-
-int msm_snddev_audience_speaker_off(void)
-{
-	pr_info("%s: disable msm_snddev_audience_speaker_off\n", __func__);
-
-	msm_snddev_audience_call_route_speaker_deconfig();
-
-	//if (atomic_dec_return(&pamp_ref_cnt) == 0) {
-		pr_debug("%s: disable stereo spkr amp\n", __func__);
-#ifdef CONFIG_SENSORS_YDA165
-		//yda165_speaker_onoff(0);  // mdhwang_test
-		yda165_speaker_call_onoff(0);
-#endif
-	//}	
-	return 0;
-}
-
-void msm_snddev_audience_call_route_headset_config(void)
-{
-	pr_info("%s()\n", __func__);
-	gpio_set_value(GPIO_AUDIECNE_A2220_SWITCH, 0); //switch  to I2S audience
-	a2220_ioctl2(A2220_SET_CONFIG , A2220_PATH_INCALL_HEADSET);	
-
-	return;
-}
-void msm_snddev_audience_call_route_headset_deconfig(void)
-{
-	pr_info("%s()\n", __func__);
-	a2220_ioctl2(A2220_SET_CONFIG , A2220_PATH_SUSPEND);	
-
-	gpio_set_value(GPIO_AUDIECNE_A2220_SWITCH, 1); //switch  to I2S QTR
-#ifdef AUDIENCE_BYPASS
-	//if(get_hw_rev() < 0x05)
-	if (1)
-	{
-		mdelay(5);
-		a2220_ioctl2(A2220_SET_CONFIG , A2220_PATH_BYPASS_MULTIMEDIA);
-	}
-#endif	
-
-	return;
-}
-int msm_snddev_audience_poweramp_on_headset(void)
-{
-	msm_snddev_audience_call_route_headset_config();
-#ifdef CONFIG_SENSORS_YDA165
-	//yda165_headset_onoff(1);  // mdhwang_test
-	yda165_headset_call_onoff(1);
-#endif
-	pr_info("%s: power on headset\n", __func__);
-
-	return 0;
-}
-
-void  msm_snddev_audience_poweramp_off_headset(void)
-{
-	msm_snddev_audience_call_route_headset_deconfig();
-#ifdef CONFIG_SENSORS_YDA165
-	//yda165_headset_onoff(0);  // mdhwang_test
-	yda165_headset_call_onoff(0);
-#endif
-	pr_info("%s: power off headset\n", __func__);
-}
-
-int msm_snddev_setting_audience_call_connect(void)
-{
-	msm_snddev_audience_call_route_config();
-	return 0;
-}
-
-int msm_snddev_setting_audience_call_disconnect(void)
-{
-	msm_snddev_audience_call_route_deconfig();
-	return 0;
-}
-
-#endif  /* CONFIG_VP_A2220 */
- 
 #endif /* CONFIG_MSM7KV2_AUDIO */
 
 static int __init buses_init(void)
@@ -3441,7 +3283,7 @@ static int __init fg17043_gpio_init(void)
 {
 	int pin, rc;
 
-	printk("[hyeokseon]fg17043_gpio_init \n");
+	//printk("[hyeokseon]fg17043_gpio_init \n");
 
 		for (pin = 0; pin < ARRAY_SIZE(fg17043_gpio_on); pin++) {
 			rc = gpio_tlmm_config(fg17043_gpio_on[pin],
@@ -3467,7 +3309,7 @@ static int __init fg_smb_gpio_init(void)
 {
 	int pin, rc;
 
-	printk("[hyeokseon]fg_smb_gpio_init \n");
+	//printk("[hyeokseon]fg_smb_gpio_init \n");
 
 		for (pin = 0; pin < ARRAY_SIZE(fg_smb_gpio_on); pin++) {
 			rc = gpio_tlmm_config(fg_smb_gpio_on[pin],
@@ -3988,7 +3830,7 @@ static struct usb_mass_storage_platform_data usb_mass_storage_pdata = {
 	.nluns          = 0x02,
 //	.buf_size       = 16384,
 	.vendor         = "SAMSUNG",
-	.product        = "GT-I9001 Card",
+	.product        = "SGH-I847 Card",
 	.release        = 0xffff,
 };
 
@@ -4507,7 +4349,7 @@ static void mxt224_power_on(void)
 	gpio_set_value( GPIO_TSP_SCL , 1 ); 
 	gpio_set_value( GPIO_TSP_SDA , 1 ); 
 	gpio_set_value( GPIO_TSP_INT , 1 );
-	
+	msleep(10);
 
 	printk("mxt224_power_on is finished\n");
 }
@@ -4564,69 +4406,44 @@ static u8 t7_config_e[] = {GEN_POWERCONFIG_T7,
 				255,	/* ACTVACQINT */
 				25 		/* ACTV2IDLETO: 25 * 200ms = 5s */};
 static u8 t8_config_e[] = {GEN_ACQUISITIONCONFIG_T8,
-				27, 0, 5, 1, 0, 0, 4, 35, 40, 55};
-				
-				
-#if 1 /* MXT224E_0V5_CONFIG */	
-/* NEXTTCHDI added */
+				27, 0, 5, 2, 0, 0, 4, 35, 40, 55};
+								
 static u8 t9_config_e[] = {TOUCH_MULTITOUCHSCREEN_T9,
 				139, 0, 0, 19, 11, 0, 32, 50, 2, 1,
 				10, 
 				15,		/* MOVHYSTI */
 				1, 46, MXT224_MAX_MT_FINGERS, 5, 40, 10, 31, 3,
 				223, 1, 10, 10, 10, 10, 143, 40, 143, 80,
-				18, 15, 50, 50, 0};
-#else
-static u8 t9_config_e[] = {TOUCH_MULTITOUCHSCREEN_T9,
-				139, 0, 0, 19, 11, 0, 16, MXT224_THRESHOLD, 2, 1, 10, 3, 1,
-				0, MXT224_MAX_MT_FINGERS, 10, 40, 10, 31, 3,
-				223, 1, 10, 10, 10, 10, 143, 40, 143, 80, 18, 15, 50, 50};
-#endif
+				18, 15, 50, 50, 2};
 
-
-
-static u8 t15_config_e[] = {TOUCH_KEYARRAY_T15,
-				0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-
-static u8 t18_config_e[] = {SPT_COMCONFIG_T18,
-				0, 0};
-
-static u8 t23_config_e[] = {TOUCH_PROXIMITY_T23,
-				0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-
-static u8 t25_config_e[] = {SPT_SELFTEST_T25,
-				0, 0, 0, 0, 0, 0, 0, 0};
-
-static u8 t40_config_e[] = {PROCI_GRIPSUPPRESSION_T40,
-				0, 0, 0, 0, 0};
-
-static u8 t42_config_e[] = {PROCI_TOUCHSUPPRESSION_T42,
-				0, 0, 0, 0, 0, 0, 0, 0};
-
-static u8 t46_config_e[] = {SPT_CTECONFIG_T46,
-				0, 3, 24, 32, 0, 0, 1, 0, 0};
-
-static u8 t47_config_e[] = {PROCI_STYLUS_T47,
-				0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+static u8 t15_config_e[] = {TOUCH_KEYARRAY_T15,	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+static u8 t18_config_e[] = {SPT_COMCONFIG_T18, 0, 0};
+static u8 t23_config_e[] = {TOUCH_PROXIMITY_T23, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+static u8 t25_config_e[] = {SPT_SELFTEST_T25, 0, 0, 0, 0, 0, 0, 0, 0};
+static u8 t38_config_e[] = {SPT_USERDATA_T38, 0, 1, 12, 19, 38, 40, 0, 0};
+static u8 t40_config_e[] = {PROCI_GRIPSUPPRESSION_T40, 0, 0, 0, 0, 0};
+static u8 t42_config_e[] = {PROCI_TOUCHSUPPRESSION_T42,	0, 0, 0, 0, 0, 0, 0, 0};
+static u8 t46_config_e[] = {SPT_CTECONFIG_T46, 0, 3, 24, 38, 0, 0, 1, 0, 0};
+static u8 t47_config_e[] = {PROCI_STYLUS_T47, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 #if 1 /*MXT224E_0V5_CONFIG */
 static u8 t48_config_e_normal[] = {PROCG_NOISESUPPRESSION_T48,
 				3, 132, 64, 0, 0, 0, 0, 0, 10, 20,
-				0, 0, 0, 6, 6, 0, 0, 64, 4, 64,
-				10, 0, 20, 5, 0, 38, 0, 5, 0, 0,
+				0, 0, 0, 6, 6, 0, 0, 48, 4, 48,
+				10, 0, 10, 5, 0, 20, 0, 5, 0, 0,
 				0, 0, 0, 0, 32, 50, 2, 
 				15,		/* MOVHYSTI */ 
-				1, 11,
+				1, 46,
 				10, 5, 40, 10, 10, 10, 10, 143, 40, 143,
 				80, 18, 15, 0};
 static u8 t48_config_e_ta[] = {PROCG_NOISESUPPRESSION_T48,
-				3, 132, 80, 0, 0, 0, 0, 0, 10, 20,
+				3, 132, 82, 0, 0, 0, 0, 0, 10, 20,
 				0, 0, 0, 6, 6, 0, 0, 64, 4, 64,
-				10, 0, 20, 5, 0, 38, 0, 20, 0, 0,
-				0, 0, 0, 0, 0, 35, 2, 
+				10, 0, 9, 5, 0, 15, 0, 20, 0, 0,
+				0, 0, 0, 0, 0, 32, 2, 
 				15,		/* MOVHYSTI */ 
 				1, 47,
-				10, 5, 40, 230, 240, 0, 10, 170, 48, 143,
+				10, 5, 40, 245, 245, 20, 20, 170, 48, 143,
 				80, 18, 8, 0};
 #else
 /*static u8 t48_config_e[] = {PROCG_NOISESUPPRESSION_T48,
@@ -4645,12 +4462,13 @@ static const u8 *mxt224e_config[] = {
 	t18_config_e,
 	t23_config_e,
 	t25_config_e,
+	t38_config_e,
 	t40_config_e,
 	t42_config_e,
 	t46_config_e,
 	t47_config_e,
 	t48_config_e_normal,
-	t48_config_e_ta,
+	//t48_config_e_ta,	
 	end_config_e,
 };
 
@@ -5015,8 +4833,7 @@ static struct ofn_atlab_platform_data optnav_data = {
 
 static int hdmi_comm_power(int on, int show);
 
-#if defined (CONFIG_SENSOR_MC7) || defined (CONFIG_SENSOR_CE147) || \
-    defined (CONFIG_SENSOR_S5K4ECGX) || defined (CONFIG_SENSOR_S5K5CCAF)
+#if defined (CONFIG_SENSOR_MC7) || defined (CONFIG_SENSOR_CE147) || defined (CONFIG_SENSOR_S5K4ECGX) || defined (CONFIG_SENSOR_S5K5CCAF)
 static struct i2c_board_info msm_cam_pm_lp8720_info[] = {
 	{
 		I2C_BOARD_INFO("cam_pm_lp8720", 0x7D),
@@ -5135,41 +4952,53 @@ static struct platform_device hs_device = {
 };
 
 static struct msm_pm_platform_data msm_pm_data[MSM_PM_SLEEP_MODE_NR] = {
-	[MSM_PM_SLEEP_MODE_POWER_COLLAPSE].supported = 1,
-	[MSM_PM_SLEEP_MODE_POWER_COLLAPSE].suspend_enabled = 1,
-	[MSM_PM_SLEEP_MODE_POWER_COLLAPSE].idle_enabled = 1,
-	[MSM_PM_SLEEP_MODE_POWER_COLLAPSE].latency = 8594,
-	[MSM_PM_SLEEP_MODE_POWER_COLLAPSE].residency = 23740,
-
-	[MSM_PM_SLEEP_MODE_POWER_COLLAPSE_NO_XO_SHUTDOWN].supported = 1,
-	[MSM_PM_SLEEP_MODE_POWER_COLLAPSE_NO_XO_SHUTDOWN].suspend_enabled = 1,
-	[MSM_PM_SLEEP_MODE_POWER_COLLAPSE_NO_XO_SHUTDOWN].idle_enabled = 1,
-	[MSM_PM_SLEEP_MODE_POWER_COLLAPSE_NO_XO_SHUTDOWN].latency = 4594,
-	[MSM_PM_SLEEP_MODE_POWER_COLLAPSE_NO_XO_SHUTDOWN].residency = 23740,
-
-	[MSM_PM_SLEEP_MODE_POWER_COLLAPSE_STANDALONE].supported = 1,
+	[MSM_PM_SLEEP_MODE_POWER_COLLAPSE] = {
+		.idle_supported = 1,
+		.suspend_supported = 1,
+		.idle_enabled = 1,
+		.suspend_enabled = 1,
+		.latency = 8594,
+		.residency = 23740,
+	},
+	[MSM_PM_SLEEP_MODE_POWER_COLLAPSE_NO_XO_SHUTDOWN] = {
+		.idle_supported = 1,
+		.suspend_supported = 1,
+		.idle_enabled = 1,
+		.suspend_enabled = 1,
+		.latency = 4594,
+		.residency = 23740,
+	},
+	[MSM_PM_SLEEP_MODE_POWER_COLLAPSE_STANDALONE] = {
 #ifdef CONFIG_MSM_STANDALONE_POWER_COLLAPSE
-	[MSM_PM_SLEEP_MODE_POWER_COLLAPSE_STANDALONE].suspend_enabled = 0,
-	[MSM_PM_SLEEP_MODE_POWER_COLLAPSE_STANDALONE].idle_enabled = 1,
+		.idle_supported = 1,
+		.suspend_supported = 1,
+		.idle_enabled = 1,
+		.suspend_enabled = 0,
 #else /*CONFIG_MSM_STANDALONE_POWER_COLLAPSE*/
-	[MSM_PM_SLEEP_MODE_POWER_COLLAPSE_STANDALONE].suspend_enabled = 0,
-	[MSM_PM_SLEEP_MODE_POWER_COLLAPSE_STANDALONE].idle_enabled = 0,
+		.idle_supported = 0,
+		.suspend_supported = 0,
+		.idle_enabled = 0,
+		.suspend_enabled = 0,
 #endif /*CONFIG_MSM_STANDALONE_POWER_COLLAPSE*/
-	[MSM_PM_SLEEP_MODE_POWER_COLLAPSE_STANDALONE].latency = 500,
-	[MSM_PM_SLEEP_MODE_POWER_COLLAPSE_STANDALONE].residency = 6000,
-
-	[MSM_PM_SLEEP_MODE_RAMP_DOWN_AND_WAIT_FOR_INTERRUPT].supported = 1,
-	[MSM_PM_SLEEP_MODE_RAMP_DOWN_AND_WAIT_FOR_INTERRUPT].suspend_enabled
-		= 1,
-	[MSM_PM_SLEEP_MODE_RAMP_DOWN_AND_WAIT_FOR_INTERRUPT].idle_enabled = 0,
-	[MSM_PM_SLEEP_MODE_RAMP_DOWN_AND_WAIT_FOR_INTERRUPT].latency = 443,
-	[MSM_PM_SLEEP_MODE_RAMP_DOWN_AND_WAIT_FOR_INTERRUPT].residency = 1098,
-
-	[MSM_PM_SLEEP_MODE_WAIT_FOR_INTERRUPT].supported = 1,
-	[MSM_PM_SLEEP_MODE_WAIT_FOR_INTERRUPT].suspend_enabled = 1,
-	[MSM_PM_SLEEP_MODE_WAIT_FOR_INTERRUPT].idle_enabled = 1,
-	[MSM_PM_SLEEP_MODE_WAIT_FOR_INTERRUPT].latency = 2,
-	[MSM_PM_SLEEP_MODE_WAIT_FOR_INTERRUPT].residency = 0,
+		.latency = 500,
+		.residency = 6000,
+	},
+	[MSM_PM_SLEEP_MODE_RAMP_DOWN_AND_WAIT_FOR_INTERRUPT] = {
+		.idle_supported = 1,
+		.suspend_supported = 1,
+		.idle_enabled = 0,
+		.suspend_enabled = 1,
+		.latency = 443,
+		.residency = 1098,
+	},
+	[MSM_PM_SLEEP_MODE_WAIT_FOR_INTERRUPT] = {
+		.idle_supported = 1,
+		.suspend_supported = 1,
+		.idle_enabled = 1,
+		.suspend_enabled = 1,
+		.latency = 2,
+		.residency = 0,
+	},
 };
 
 #ifdef CONFIG_USB_EHCI_MSM
@@ -5298,7 +5127,7 @@ static struct msm_otg_platform_data msm_otg_pdata = {
 	.core_clk		 = 1,
 	.pemp_level		 = PRE_EMPHASIS_WITH_20_PERCENT,
 	.cdr_autoreset		 = CDR_AUTO_RESET_DISABLE,
-	.drv_ampl		 = HS_DRV_AMPLITUDE_DEFAULT,
+	.drv_ampl		 = HS_DRV_AMPLITUDE_75_PERCENT,
 	.se1_gating		 = SE1_GATING_DISABLE,
 	.chg_vbus_draw		 = hsusb_chg_vbus_draw,
 	.chg_connected		 = hsusb_chg_connected,
@@ -5520,6 +5349,27 @@ static struct platform_device lcdc_s6e63m0_panel_device = {
 };
 #endif
 
+
+static int __init lcdc_gpio_init(void) {
+
+	int rc,n;
+	int LCD_B[] = {20,21,22,100,101,102,103,104};
+	
+	rc = gpio_request(47, "LCD_SDA");
+	if (rc) {
+		pr_err("%s: unable to request gpio %d (%d)\n",
+					__func__, 47, rc);
+	}
+
+	for (n = 0; n < sizeof(LCD_B)/sizeof(int); n++) {
+		rc = gpio_request(LCD_B[n], NULL);
+		if (rc) {
+				pr_err("%s: unable to request gpio %d (%d)\n",
+						__func__, LCD_B[n], rc);
+		}
+	}
+
+}
 
 
 static struct msm_gpio dtv_panel_gpios[] = {
@@ -5744,79 +5594,112 @@ static struct platform_device android_pmem_audio_device = {
        .dev = { .platform_data = &android_pmem_audio_pdata },
 };
 
-static struct kgsl_platform_data kgsl_pdata = {
-#ifdef CONFIG_MSM_NPA_SYSTEM_BUS
-	/* NPA Flow IDs */
-	.high_axi_3d = MSM_AXI_FLOW_3D_GPU_HIGH,
-	.high_axi_2d = MSM_AXI_FLOW_2D_GPU_HIGH,
-#else
-	/* AXI rates in KHz */
-	.high_axi_3d = 192000,
-	.high_axi_2d = 192000,
-#endif
-	.max_grp2d_freq = 0,
-	.min_grp2d_freq = 0,
-	.set_grp2d_async = NULL, /* HW workaround, run Z180 SYNC @ 192 MHZ */
-	.max_grp3d_freq = 245760000,
-	.min_grp3d_freq = 192 * 1000*1000,
-	.set_grp3d_async = set_grp3d_async,
-	.imem_clk_name = "imem_clk",
-	.grp3d_clk_name = "grp_clk",
-	.grp3d_pclk_name = "grp_pclk",
-#ifdef CONFIG_MSM_KGSL_2D
-	.grp2d0_clk_name = "grp_2d_clk",
-	.grp2d0_pclk_name = "grp_2d_pclk",
-#else
-	.grp2d0_clk_name = NULL,
-#endif
-	.idle_timeout_3d = HZ/20,
-	.idle_timeout_2d = HZ/10,
-	.nap_allowed = false,
-#ifdef CONFIG_KGSL_PER_PROCESS_PAGE_TABLE
-	.pt_va_size = SZ_32M,
-	/* Maximum of 32 concurrent processes */
-	.pt_max_count = 32,
-#else
-	.pt_va_size = SZ_128M,
-	/* We only ever have one pagetable for everybody */
-	.pt_max_count = 1,
-#endif
-};
-
-static struct resource kgsl_resources[] = {
+struct resource kgsl_3d0_resources[] = {
 	{
-		.name = "kgsl_reg_memory",
+		.name  = KGSL_3D0_REG_MEMORY,
 		.start = 0xA3500000, /* 3D GRP address */
 		.end = 0xA351ffff,
 		.flags = IORESOURCE_MEM,
 	},
 	{
-		.name = "kgsl_yamato_irq",
+		.name = KGSL_3D0_IRQ,
 		.start = INT_GRP_3D,
 		.end = INT_GRP_3D,
 		.flags = IORESOURCE_IRQ,
 	},
+};
+
+static struct kgsl_device_platform_data kgsl_3d0_pdata = {
+	.pwr_data = {
+		.pwrlevel = {
+			{
+				.gpu_freq = 245760000,
+				.bus_freq = 192000000,
+			},
+			{
+				.gpu_freq = 192000000,
+				.bus_freq = 152000000,
+			},
+			{
+				.gpu_freq = 192000000,
+				.bus_freq = 0,
+			},
+		},
+		.init_level = 0,
+		.num_levels = 3,
+		.set_grp_async = set_grp3d_async,
+		.idle_timeout = HZ/20,
+		.nap_allowed = true,
+		.idle_needed = true,
+	},
+	.clk = {
+		.name = {
+			.clk = "grp_clk",
+			.pclk = "grp_pclk",
+		},
+	},
+	.imem_clk_name = {
+		.clk = "imem_clk",
+		.pclk = NULL,
+	},
+};
+
+struct platform_device msm_kgsl_3d0 = {
+	.name = "kgsl-3d0",
+	.id = 0,
+	.num_resources = ARRAY_SIZE(kgsl_3d0_resources),
+	.resource = kgsl_3d0_resources,
+	.dev = {
+		.platform_data = &kgsl_3d0_pdata,
+	},
+};
+
+static struct resource kgsl_2d0_resources[] = {
 	{
-		.name = "kgsl_2d0_reg_memory",
+		.name = KGSL_2D0_REG_MEMORY,
 		.start = 0xA3900000, /* Z180 base address */
 		.end = 0xA3900FFF,
 		.flags = IORESOURCE_MEM,
 	},
 	{
-		.name  = "kgsl_2d0_irq",
+		.name = KGSL_2D0_IRQ,
 		.start = INT_GRP_2D,
 		.end = INT_GRP_2D,
 		.flags = IORESOURCE_IRQ,
 	},
 };
 
-static struct platform_device msm_device_kgsl = {
-	.name = "kgsl",
-	.id = -1,
-	.num_resources = ARRAY_SIZE(kgsl_resources),
-	.resource = kgsl_resources,
+static struct kgsl_device_platform_data kgsl_2d0_pdata = {
+	.pwr_data = {
+		.pwrlevel = {
+			{
+				.gpu_freq = 0,
+				.bus_freq = 192000000,
+			},
+		},
+		.init_level = 0,
+		.num_levels = 1,
+		/* HW workaround, run Z180 SYNC @ 192 MHZ */
+		.set_grp_async = NULL,
+		.idle_timeout = HZ/10,
+		.nap_allowed = true,
+		.idle_needed = true,
+	},
+	.clk = {
+		.name = {
+			.clk = "grp_2d_clk",
+			.pclk = "grp_2d_pclk",
+		},
+	},
+};
+
+struct platform_device msm_kgsl_2d0 = {
+	.name = "kgsl-2d0",
+	.id = 0,
+	.num_resources = ARRAY_SIZE(kgsl_2d0_resources),
+	.resource = kgsl_2d0_resources,
 	.dev = {
-		.platform_data = &kgsl_pdata,
+		.platform_data = &kgsl_2d0_pdata,
 	},
 };
 
@@ -5829,7 +5712,7 @@ static struct platform_device msm_device_kgsl = {
 #define QCE_0_BASE		0xA8400000
 
 #define QCE_HW_KEY_SUPPORT	1
-
+#define QCE_SHA_HMAC_SUPPORT	0
 #define QCE_SHARE_CE_RESOURCE	0
 #define QCE_CE_SHARED		0
 
@@ -5873,6 +5756,7 @@ static struct msm_ce_hw_support qcrypto_ce_hw_suppport = {
 	.ce_shared = QCE_CE_SHARED,
 	.shared_ce_resource = QCE_SHARE_CE_RESOURCE,
 	.hw_key_support = QCE_HW_KEY_SUPPORT,
+	.sha_hmac = QCE_SHA_HMAC_SUPPORT,
 };
 static struct platform_device qcrypto_device = {
 	.name		= "qcrypto",
@@ -5892,6 +5776,7 @@ static struct msm_ce_hw_support qcedev_ce_hw_suppport = {
 	.ce_shared = QCE_CE_SHARED,
 	.shared_ce_resource = QCE_SHARE_CE_RESOURCE,
 	.hw_key_support = QCE_HW_KEY_SUPPORT,
+	.sha_hmac = QCE_SHA_HMAC_SUPPORT,
 };
 static struct platform_device qcedev_device = {
 	.name		= "qce",
@@ -6050,7 +5935,6 @@ static struct mddi_platform_data mddi_pdata = {
 int mdp_core_clk_rate_table[] = {
 	122880000,
 	122880000,
-	122880000,
 	192000000,
 	192000000,
 };
@@ -6061,6 +5945,7 @@ static struct msm_panel_common_pdata mdp_pdata = {
 	.mdp_core_clk_rate = 122880000,
 	.mdp_core_clk_table = mdp_core_clk_rate_table,
 	.num_mdp_clk = ARRAY_SIZE(mdp_core_clk_rate_table),
+	.mdp_rev = MDP_REV_40,
 };
 
 static struct msm_gpio lcd_panel_on_gpios[] = {
@@ -6166,7 +6051,7 @@ static int lcdc_common_panel_power(int on)
 		}
 	}
 #endif	
-	printk("######### SEXYKYU lcdc_common_panel_power - ######## \n");
+	//printk("######### SEXYKYU lcdc_common_panel_power - ######## \n");
 	return rc;
 }
 
@@ -6689,8 +6574,13 @@ static int bluetooth_gpio_init(void)
 //sc47.yun
 #endif//Finish Power or Sleep at Bluetooth sc47.yun
 static struct msm_psy_batt_pdata msm_psy_batt_data = {
+#if defined(CONFIG_BATT_MICROVOLT_UNIT)
+	.voltage_min_design 	= 3400000,
+	.voltage_max_design	= 4200000,
+#else
 	.voltage_min_design 	= 3400,
 	.voltage_max_design	= 4200,
+#endif
 	.avail_chg_sources   	= AC_CHG | USB_CHG ,
 	.batt_technology        = POWER_SUPPLY_TECHNOLOGY_LION,
 };
@@ -6777,58 +6667,6 @@ struct platform_device msm_device_sdio_al = {
 
 #endif /* CONFIG_MSM_SDIO_AL */
 
-#ifdef CONFIG_VP_A2220
-
-static unsigned msm_aud_a2220_gpio[] = {
-	GPIO_CFG(GPIO_AUDIENCE_A2220_PWDN, 0, GPIO_CFG_OUTPUT, GPIO_CFG_PULL_UP, GPIO_CFG_2MA),   /* A1026_WAKEUP */
-	GPIO_CFG(GPIO_AUDIENCE_A2220_RESET, 0, GPIO_CFG_OUTPUT,  GPIO_CFG_PULL_UP, GPIO_CFG_2MA),  /* MSM_AUD_A1026_RESET */ 	
-};
-
-static int __init a2220_gpio_init(void)
-{
-	pr_info("a2220_gpio_init \n");
-
-	config_gpio_table(msm_aud_a2220_gpio, ARRAY_SIZE(msm_aud_a2220_gpio));
-	
-	//Handling GPIO Audience CIP Sel
-	gpio_tlmm_config(GPIO_CFG(GPIO_AUDIECNE_A2220_SWITCH,0,GPIO_CFG_OUTPUT,GPIO_CFG_NO_PULL,GPIO_CFG_2MA),GPIO_CFG_ENABLE); //Audeince Chip Sel
-	gpio_set_value(GPIO_AUDIECNE_A2220_SWITCH, 1);
-	
-	return 0;
-}
-
-static struct i2c_gpio_platform_data a2220_i2c_gpio_data = {
-	.sda_pin    = GPIO_AUDIENCE_A2220_I2C_SDA, // check done
-	.scl_pin    = GPIO_AUDIENCE_A2220_I2C_SCL, //check done
-	.udelay	= 1,
-};
-
-static struct platform_device a2220_i2c_device = {
-	.name	= "i2c-gpio",
-	.id		= 22,	//MSM_A2220_I2C_BUS_ID,
-	.dev		= {
-		.platform_data  = &a2220_i2c_gpio_data,
-	},
-};
-
-static struct a2220_platform_data a2220_data = {
-	.gpio_a2220_micsel = 0, // ??
-	.gpio_a2220_wakeup = GPIO_AUDIENCE_A2220_PWDN,
-	.gpio_a2220_reset = GPIO_AUDIENCE_A2220_RESET,
-	.gpio_a2220_clk = 0,
-	/*.gpio_a2220_int = MAHIMAHI_AUD_A2220_INT,*/
-};
-
-static struct i2c_board_info audience_a2220_i2c_board_info[] = {
-	{
-		I2C_BOARD_INFO("audience_a2220", 0x3E),
-		.platform_data = &a2220_data,
-		/*.irq = MSM_GPIO_TO_INT(MAHIMAHI_AUD_A2220_INT)*/
-	},
-};
-#endif
-
-
 static struct platform_device *uart3_device[] __initdata = {
 	&msm_device_uart3,
 };
@@ -6869,18 +6707,18 @@ static struct platform_device *devices[] __initdata = {
 #endif
 #ifdef CONFIG_FB_MSM_LCDC_S6D16A0X22_WVGA_PANEL
 	&lcdc_s6d16a0x22_panel_device,
-#elif defined CONFIG_FB_MSM_LCDC_SAMSUNG_ANCORA_PANEL
+#endif
+#ifdef CONFIG_FB_MSM_LCDC_SAMSUNG_ANCORA_PANEL
 	&lcdc_samsung_panel_device,
 #elif defined CONFIG_FB_MSM_LCDC_S6E63M0_WVGA_PANEL
 	&lcdc_s6e63m0_panel_device,
 #else
         define error	
 #endif
-
 	&android_pmem_kernel_ebi1_device,
 	&android_pmem_adsp_device,
 	&android_pmem_audio_device,
-	&msm_device_i2c,
+	//&msm_device_i2c,
 	&msm_device_i2c_2,
 	&msm_device_uart_dm1,
 	&hs_device,
@@ -6955,12 +6793,10 @@ static struct platform_device *devices[] __initdata = {
 #endif
 	&msm_bt_power_device,//sc47.yun
 	&msm_bluesleep_device, //sc47.yun
-	&msm_device_kgsl,
+	&msm_kgsl_3d0,
+	&msm_kgsl_2d0,
 #if defined (CONFIG_SENSOR_S5K4ECGX)
 	&msm_camera_sensor_s5k4ecgx,
-#endif
-#if defined (CONFIG_SENSOR_SR130PC10)
-	&msm_camera_sensor_sr130pc10,
 #endif
 #if defined (CONFIG_SENSOR_MC7)
 	&msm_camera_sensor_mc7,
@@ -7028,6 +6864,10 @@ static struct platform_device *devices[] __initdata = {
 	&sec_device_jack,
 #endif
 
+#ifdef CONFIG_INPUT_SECBRIDGE
+    &apatch_input_bridge,
+#endif
+
 #ifdef CONFIG_VP_A2220
 	&a2220_i2c_device,
 #endif
@@ -7035,13 +6875,13 @@ static struct platform_device *devices[] __initdata = {
 
 
 static struct msm_gpio msm_i2c_gpios_hw[] = {
-	{ GPIO_CFG(70, 1, GPIO_CFG_INPUT, GPIO_CFG_NO_PULL, GPIO_CFG_16MA), "i2c_scl" },
-	{ GPIO_CFG(71, 1, GPIO_CFG_INPUT, GPIO_CFG_NO_PULL, GPIO_CFG_16MA), "i2c_sda" },
+//	{ GPIO_CFG(70, 1, GPIO_CFG_INPUT, GPIO_CFG_NO_PULL, GPIO_CFG_16MA), "i2c_scl" },
+//	{ GPIO_CFG(71, 1, GPIO_CFG_INPUT, GPIO_CFG_NO_PULL, GPIO_CFG_16MA), "i2c_sda" },
 };
 
 static struct msm_gpio msm_i2c_gpios_io[] = {
-	{ GPIO_CFG(70, 0, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL, GPIO_CFG_16MA), "i2c_scl" },
-	{ GPIO_CFG(71, 0, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL, GPIO_CFG_16MA), "i2c_sda" },
+//	{ GPIO_CFG(70, 0, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL, GPIO_CFG_16MA), "i2c_scl" },
+//	{ GPIO_CFG(71, 0, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL, GPIO_CFG_16MA), "i2c_sda" },
 };
 
 
@@ -7253,11 +7093,11 @@ static struct msm_gpio sdc3_sleep_cfg_data[] = {
 
 static struct msm_gpio sdc4_cfg_data[] = {
 	{GPIO_CFG(58, 1, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL, GPIO_CFG_16MA), "sdc4_clk"},
-	{GPIO_CFG(59, 1, GPIO_CFG_OUTPUT, GPIO_CFG_PULL_DOWN/*GPIO_CFG_NO_PULL*/, GPIO_CFG_8MA), "sdc4_cmd"},
-	{GPIO_CFG(60, 1, GPIO_CFG_OUTPUT, GPIO_CFG_PULL_DOWN/*GPIO_CFG_NO_PULL*/, GPIO_CFG_8MA), "sdc4_dat_3"},
-	{GPIO_CFG(61, 1, GPIO_CFG_OUTPUT, GPIO_CFG_PULL_DOWN/*GPIO_CFG_NO_PULL*/, GPIO_CFG_8MA), "sdc4_dat_2"},
-	{GPIO_CFG(62, 1, GPIO_CFG_OUTPUT, GPIO_CFG_PULL_DOWN/*GPIO_CFG_NO_PULL*/, GPIO_CFG_8MA), "sdc4_dat_1"},
-	{GPIO_CFG(63, 1, GPIO_CFG_OUTPUT, GPIO_CFG_PULL_DOWN/*GPIO_CFG_NO_PULL*/, GPIO_CFG_8MA), "sdc4_dat_0"},
+	{GPIO_CFG(59, 1, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL, GPIO_CFG_8MA), "sdc4_cmd"},
+	{GPIO_CFG(60, 1, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL, GPIO_CFG_8MA), "sdc4_dat_3"},
+	{GPIO_CFG(61, 1, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL, GPIO_CFG_8MA), "sdc4_dat_2"},
+	{GPIO_CFG(62, 1, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL, GPIO_CFG_8MA), "sdc4_dat_1"},
+	{GPIO_CFG(63, 1, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL, GPIO_CFG_8MA), "sdc4_dat_0"},
 };
 
 static struct sdcc_gpio sdcc_cfg_data[] = {
@@ -8919,7 +8759,7 @@ static void __init msm7x30_init(void)
 
 	msm_fb_add_devices();
 	msm_pm_set_platform_data(msm_pm_data, ARRAY_SIZE(msm_pm_data));
-	msm_device_i2c_init();
+	//msm_device_i2c_init();
 	msm_device_i2c_2_init();
 #if defined (CONFIG_USE_QUP_I2C)
 	qup_device_i2c_init();
@@ -8930,11 +8770,6 @@ static void __init msm7x30_init(void)
 	snddev_poweramp_gpio_init();
 	aux_pcm_gpio_init();
 #endif
-
-#ifdef CONFIG_VP_A2220
-	a2220_gpio_init();
-#endif
-
 #if 1
 	fsa9480_gpio_init();
 #endif
@@ -8958,22 +8793,15 @@ static void __init msm7x30_init(void)
 		ARRAY_SIZE(yamahaamp_boardinfo));
 	pr_info("yda165:register yamaha amp device \n");
 #endif
-
-#ifdef CONFIG_VP_A2220
-	i2c_register_board_info(22, audience_a2220_i2c_board_info,
-		ARRAY_SIZE(audience_a2220_i2c_board_info));
-	pr_info("A2220:register audience device \n");
-#endif
-
 #ifdef CONFIG_SAMSUNG_FM_SI4709
   i2c_register_board_info(19, si4709_info,
 		ARRAY_SIZE(si4709_info));
   pr_info("si4709:register fm radio si4709 device \n");
 #endif
-
+/*
 	i2c_register_board_info(0, msm_i2c_board_info,
 			ARRAY_SIZE(msm_i2c_board_info));
-
+*/
 	if (!machine_is_msm8x55_svlte_ffa())
 		marimba_pdata.tsadc = &marimba_tsadc_pdata;
 
@@ -9005,8 +8833,9 @@ else
 #endif
 
 #if defined (CONFIG_TOUCHSCREEN_MXT224)
-	i2c_register_board_info(0, mxt224_touch_boardinfo,
+	i2c_register_board_info(14, mxt224_touch_boardinfo,
 		ARRAY_SIZE(mxt224_touch_boardinfo));
+    pr_info("i2c_register_board_info 14 \n");
 #endif
 
 
