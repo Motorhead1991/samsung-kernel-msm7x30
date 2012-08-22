@@ -103,9 +103,6 @@
 /* 2011-06-20 hyeokseon.yu */
 #ifdef CONFIG_CHARGER_SMB328A
 #include <linux/smb328a_charger.h>
-#ifndef CONFIG_HW_REV_USING_SMB328
-#define CONFIG_HW_REV_USING_SMB328 0x00
-#endif
 #endif
 
 #ifdef CONFIG_SAMSUNG_JACK
@@ -172,12 +169,16 @@ EXPORT_SYMBOL(sec_class);
 struct device *switch_dev;
 EXPORT_SYMBOL(switch_dev);
 
-#define MSM_PMEM_SF_SIZE	0x1F00000	// MM team, QC request
-#define MSM_FB_SIZE			(0xA46000-0x523000)	// ARGB8888 double duffrting
-#define MSM_PMEM_ADSP_SIZE      (0x1E20000+0x523000) // MM team request (before 0x1CD0000)
+#define MSM_PMEM_SF_SIZE		0x1A00000
+#ifdef CONFIG_FB_MSM_TRIPLE_BUFFER
+#define MSM_FB_SIZE	roundup((800 * 480 * 4 * 3), 4096) /* 4bpp * 3 Pages */
+#else
+#define MSM_FB_SIZE	roundup((800 * 480 * 4 * 2), 4096) /* 4bpp * 2 Pages */
+#endif
+#define MSM_PMEM_ADSP_SIZE		0x2D00000
 #define MSM_FLUID_PMEM_ADSP_SIZE	0x2800000
-#define PMEM_KERNEL_EBI1_SIZE   0x600000
-#define MSM_PMEM_AUDIO_SIZE     0x200000
+#define PMEM_KERNEL_EBI1_SIZE		0x600000
+#define MSM_PMEM_AUDIO_SIZE		0x200000
 
 #define PMIC_GPIO_INT		27
 #define PMIC_VREG_WLAN_LEVEL	2900
@@ -1355,8 +1356,7 @@ GPIO_CFG(1, 0, GPIO_CFG_OUTPUT, GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA), /* VCM */
 };
 
 static uint32_t camera_off_gpio_table[] = {
-#if defined (CONFIG_SENSOR_CE147) || defined (CONFIG_SENSOR_S5K5CCAF) ||\
-    defined (CONFIG_SENSOR_S5K4ECGX) || defined (CONFIG_SENSOR_SR130PC10)
+#if defined (CONFIG_SENSOR_CE147) || defined (CONFIG_SENSOR_S5K4ECGX) || defined (CONFIG_SENSOR_S5K5CCAF)
 #if !defined (CONFIG_USE_QUP_I2C)
 	GPIO_CFG(0, 0, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL, GPIO_CFG_16MA),	/* CAM_SCL */
 	GPIO_CFG(1, 0, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL, GPIO_CFG_16MA),	/* CAM_SDA */
@@ -5503,8 +5503,24 @@ static struct lcdc_platform_data dtv_pdata = {
 };
 
 static struct msm_serial_hs_platform_data msm_uart_dm1_pdata = {
-       .inject_rx_on_wakeup = 1,
-       .rx_to_inject = 0xFD,
+	.wakeup_irq = -1,
+	.inject_rx_on_wakeup = 0,
+	.exit_lpm_cb = bcm_bt_lpm_exit_lpm_locked,
+};
+
+static struct bcm_bt_lpm_platform_data bcm_bt_lpm_pdata = {
+	.gpio_wake = GPIO_BT_UART_TXD,
+	.gpio_host_wake = GPIO_BT_UART_RXD,
+	.request_clock_off_locked = msm_hs_request_clock_off_locked,
+	.request_clock_on_locked = msm_hs_request_clock_on_locked,
+};
+
+struct platform_device bcm_bt_lpm_device = {
+	.name = "bcm_bt_lpm",
+	.id = 0,
+	.dev = {
+		.platform_data = &bcm_bt_lpm_pdata,
+	},
 };
 
 static struct resource msm_fb_resources[] = {
@@ -6718,9 +6734,10 @@ static struct platform_device *devices[] __initdata = {
 	&android_pmem_kernel_ebi1_device,
 	&android_pmem_adsp_device,
 	&android_pmem_audio_device,
-	//&msm_device_i2c,
+	&msm_device_i2c,
 	&msm_device_i2c_2,
 	&msm_device_uart_dm1,
+	&bcm_bt_lpm_device,
 	&hs_device,
 	&amp_i2c_gpio_device,
 #ifdef CONFIG_SAMSUNG_FM_SI4709
@@ -8759,7 +8776,7 @@ static void __init msm7x30_init(void)
 
 	msm_fb_add_devices();
 	msm_pm_set_platform_data(msm_pm_data, ARRAY_SIZE(msm_pm_data));
-	//msm_device_i2c_init();
+	msm_device_i2c_init();
 	msm_device_i2c_2_init();
 #if defined (CONFIG_USE_QUP_I2C)
 	qup_device_i2c_init();
@@ -8798,10 +8815,10 @@ static void __init msm7x30_init(void)
 		ARRAY_SIZE(si4709_info));
   pr_info("si4709:register fm radio si4709 device \n");
 #endif
-/*
+
 	i2c_register_board_info(0, msm_i2c_board_info,
 			ARRAY_SIZE(msm_i2c_board_info));
-*/
+
 	if (!machine_is_msm8x55_svlte_ffa())
 		marimba_pdata.tsadc = &marimba_tsadc_pdata;
 
