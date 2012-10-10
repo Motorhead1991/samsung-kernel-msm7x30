@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
 # Linux kernel version: 2.6.35.14
-# Wed Aug 22 17:49:48 2012
+# Wed Oct 10 18:03:51 2012
 #
 CONFIG_ARM=y
 CONFIG_SYS_SUPPORTS_APM_EMULATION=y
@@ -396,7 +396,7 @@ CONFIG_MSM_GPIOMUX=y
 CONFIG_MSM_SLEEP_STATS_DEVICE=y
 CONFIG_MSM_STANDALONE_POWER_COLLAPSE=y
 # CONFIG_MSM_GSBI9_UART is not set
-# CONFIG_VP_A2220 is not set
+CONFIG_VP_A2220=y
 
 #
 # Processor Type
