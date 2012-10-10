@@ -1356,7 +1356,8 @@ GPIO_CFG(1, 0, GPIO_CFG_OUTPUT, GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA), /* VCM */
 };
 
 static uint32_t camera_off_gpio_table[] = {
-#if defined (CONFIG_SENSOR_CE147) || defined (CONFIG_SENSOR_S5K4ECGX) || defined (CONFIG_SENSOR_S5K5CCAF)
+#if defined (CONFIG_SENSOR_CE147) || defined (CONFIG_SENSOR_S5K5CCAF) ||\
+    defined (CONFIG_SENSOR_S5K4ECGX) || defined (CONFIG_SENSOR_SR130PC10)
 #if !defined (CONFIG_USE_QUP_I2C)
 	GPIO_CFG(0, 0, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL, GPIO_CFG_16MA),	/* CAM_SCL */
 	GPIO_CFG(1, 0, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL, GPIO_CFG_16MA),	/* CAM_SDA */
@@ -1416,7 +1417,8 @@ GPIO_CFG(1, 0, GPIO_CFG_OUTPUT, GPIO_CFG_PULL_UP, GPIO_CFG_2MA), /* VCM */
 };
 
 static uint32_t camera_on_gpio_table[] = {
-#if defined (CONFIG_SENSOR_CE147) || defined (CONFIG_SENSOR_S5K4ECGX) || defined (CONFIG_SENSOR_S5K5CCAF)
+#if defined (CONFIG_SENSOR_CE147) || defined (CONFIG_SENSOR_S5K5CCAF) ||\
+    defined (CONFIG_SENSOR_S5K4ECGX) || defined (CONFIG_SENSOR_SR130PC10)
 #if !defined (CONFIG_USE_QUP_I2C)
 	GPIO_CFG(0, 0, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL, GPIO_CFG_16MA),	/* CAM_SCL */
 	GPIO_CFG(1, 0, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL, GPIO_CFG_16MA),	/* CAM_SDA */
@@ -1657,7 +1659,30 @@ static struct platform_device msm_camera_sensor_s5k4ecgx = {
         },   
 };
 #endif
+#ifdef CONFIG_SENSOR_SR130PC10
+static struct msm_camera_sensor_flash_data flash_sr130pc10 = {
+	.flash_type = MSM_CAMERA_FLASH_NONE,
+	.flash_src  = &msm_flash_src_pwm
+};
+static struct msm_camera_sensor_info msm_camera_sensor_sr130pc10_data = {
+        .sensor_name	= "sr130pc10",
+        .sensor_reset	= 0, 
+        .sensor_pwd		= 0, 
+        .vcm_pwd		= 0, 
+        .pdata			= &msm_camera_device_data,
+        .resource       = msm_camera_resources,
+        .num_resources  = ARRAY_SIZE(msm_camera_resources),      
+        .flash_data		= &flash_sr130pc10,
+        .csi_if         = 0        
+};
 
+static struct platform_device msm_camera_sensor_sr130pc10 = {
+        .name      = "msm_camera_sr130pc10",
+        .dev       = {  
+                .platform_data = &msm_camera_sensor_sr130pc10_data,
+        },   
+};
+#endif
 #if defined (CONFIG_SENSOR_CE147)
 static struct msm_camera_sensor_flash_data flash_ce147 = {
 //	.flash_type = MSM_CAMERA_FLASH_LED,
@@ -2112,6 +2137,11 @@ void msm_snddev_tx_ear_route_config(void)
 {
 	pr_debug("%s()\n", __func__);
 	gpio_set_value_cansleep(PM8058_GPIO_PM_TO_SYS(PMIC_GPIO_EAR_MICBIAS_EN), 1);
+	
+#ifdef CONFIG_VP_A2220  // mdhwang_Test
+	gpio_set_value_cansleep(PM8058_GPIO_PM_TO_SYS(PMIC_GPIO_MICBIAS_EN), 1);
+#endif
+
 #ifdef CONFIG_SAMSUNG_JACK
 	tx_set_flag = 1;
 #endif
@@ -2123,6 +2153,11 @@ void msm_snddev_tx_ear_route_deconfig(void)
 	pr_debug("%s()\n", __func__);
 	if ( ! ( ( sec_jack_get_det_jack_state() ) && (!sec_jack_get_send_key_state()) ) )
 		gpio_set_value_cansleep(PM8058_GPIO_PM_TO_SYS(PMIC_GPIO_EAR_MICBIAS_EN), 0);
+		
+#ifdef CONFIG_VP_A2220  // mdhwang_Test
+	gpio_set_value_cansleep(PM8058_GPIO_PM_TO_SYS(PMIC_GPIO_MICBIAS_EN), 0);
+#endif
+
 #ifdef CONFIG_SAMSUNG_JACK
 	tx_set_flag = 0;
 #endif
@@ -2416,6 +2451,187 @@ int mi2s_unconfig_clk_gpio(void)
 	return 0;
 }
 
+#ifdef CONFIG_VP_A2220
+extern int a2220_ioctl2(unsigned int cmd , unsigned long arg);
+void msm_snddev_audience_call_route_config(void)
+{
+	pr_info("%s()\n", __func__);
+	
+	//msm_snddev_call_route_config();
+	gpio_set_value(GPIO_AUDIECNE_A2220_SWITCH, 0);
+
+	a2220_ioctl2(A2220_SET_CONFIG , A2220_PATH_INCALL_RECEIVER);	
+
+	return;
+}
+
+void msm_snddev_audience_off_call_route_config(void)
+{
+	pr_info("%s()\n", __func__);
+	
+	//msm_snddev_call_route_config();
+	gpio_set_value(GPIO_AUDIECNE_A2220_SWITCH, 0);
+
+	a2220_ioctl2(A2220_SET_CONFIG , A2220_PATH_INCALL_RECEIVER_OFF);	
+
+	return;
+}
+
+void msm_snddev_audience_call_route_deconfig(void)
+{
+	pr_info("%s()\n", __func__);
+
+	//msm_snddev_call_route_deconfig();
+	gpio_set_value(GPIO_AUDIECNE_A2220_SWITCH, 1);
+	a2220_ioctl2(A2220_SET_CONFIG , A2220_PATH_SUSPEND);	
+
+#ifdef AUDIENCE_BYPASS //(+)dragonball Multimedia bypass
+	//if(get_hw_rev() < 0x05)
+	if (1)
+	{
+		mdelay(5);
+		a2220_ioctl2(A2220_SET_CONFIG , A2220_PATH_BYPASS_MULTIMEDIA);
+	}
+#endif	
+
+	return;
+}
+
+void msm_snddev_audience_call_route_speaker_config(void)
+{
+	pr_info("%s()\n", __func__);
+
+	//msm_snddev_call_route_config();
+	gpio_set_value(GPIO_AUDIECNE_A2220_SWITCH, 0); //switch  to I2S audience
+
+	//a2220_ioctl2(A2220_SET_CONFIG , A2220_PATH_INCALL_RECEIVER);	
+	a2220_ioctl2(A2220_SET_CONFIG , A2220_PATH_INCALL_SPEAKER);	
+
+	return;
+}
+void msm_snddev_audience_call_route_speaker_deconfig(void)
+{
+	pr_info("%s()\n", __func__);
+
+	//msm_snddev_call_route_deconfig();
+	// ysseo 20110420 : to use a2220 Multimedia mode
+	gpio_set_value(GPIO_AUDIECNE_A2220_SWITCH, 1); //switch  to I2S QTR
+	a2220_ioctl2(A2220_SET_CONFIG , A2220_PATH_SUSPEND);	
+	
+#ifdef AUDIENCE_BYPASS
+	//if(get_hw_rev() < 0x05)
+	if (1)
+	{
+		mdelay(5);
+		a2220_ioctl2(A2220_SET_CONFIG , A2220_PATH_BYPASS_MULTIMEDIA);
+	}
+#endif	
+
+	return;
+}
+
+int msm_snddev_audience_speaker_on(void)
+{
+	msm_snddev_audience_call_route_speaker_config();
+
+	pr_info("%s: enable msm_snddev_audience_speaker_on\n", __func__);
+
+	//if (atomic_inc_return(&pamp_ref_cnt) > 1)
+	//	return 0;
+
+	pr_debug("%s: enable stereo spkr amp\n", __func__);
+
+#ifdef CONFIG_SENSORS_YDA165
+	//yda165_speaker_onoff(1); // mdhwang_test
+	yda165_speaker_call_onoff(1);
+#endif
+
+	return 0;
+}
+
+int msm_snddev_audience_speaker_off(void)
+{
+	pr_info("%s: disable msm_snddev_audience_speaker_off\n", __func__);
+
+	msm_snddev_audience_call_route_speaker_deconfig();
+
+	//if (atomic_dec_return(&pamp_ref_cnt) == 0) {
+		pr_debug("%s: disable stereo spkr amp\n", __func__);
+#ifdef CONFIG_SENSORS_YDA165
+		//yda165_speaker_onoff(0);  // mdhwang_test
+		yda165_speaker_call_onoff(0);
+#endif
+	//}	
+	return 0;
+}
+
+void msm_snddev_audience_call_route_headset_config(void)
+{
+	pr_info("%s()\n", __func__);
+	gpio_set_value(GPIO_AUDIECNE_A2220_SWITCH, 0); //switch  to I2S audience
+	a2220_ioctl2(A2220_SET_CONFIG , A2220_PATH_INCALL_HEADSET);	
+
+	return;
+}
+void msm_snddev_audience_call_route_headset_deconfig(void)
+{
+	pr_info("%s()\n", __func__);
+	a2220_ioctl2(A2220_SET_CONFIG , A2220_PATH_SUSPEND);	
+
+	gpio_set_value(GPIO_AUDIECNE_A2220_SWITCH, 1); //switch  to I2S QTR
+#ifdef AUDIENCE_BYPASS
+	//if(get_hw_rev() < 0x05)
+	if (1)
+	{
+		mdelay(5);
+		a2220_ioctl2(A2220_SET_CONFIG , A2220_PATH_BYPASS_MULTIMEDIA);
+	}
+#endif	
+
+	return;
+}
+int msm_snddev_audience_poweramp_on_headset(void)
+{
+	msm_snddev_audience_call_route_headset_config();
+#ifdef CONFIG_SENSORS_YDA165
+	//yda165_headset_onoff(1);  // mdhwang_test
+	yda165_headset_call_onoff(1);
+#endif
+	pr_info("%s: power on headset\n", __func__);
+
+	return 0;
+}
+
+void  msm_snddev_audience_poweramp_off_headset(void)
+{
+	msm_snddev_audience_call_route_headset_deconfig();
+#ifdef CONFIG_SENSORS_YDA165
+	//yda165_headset_onoff(0);  // mdhwang_test
+	yda165_headset_call_onoff(0);
+#endif
+	pr_info("%s: power off headset\n", __func__);
+}
+
+int msm_snddev_setting_audience_call_connect(void)
+{
+	msm_snddev_audience_call_route_config();
+	return 0;
+}
+
+int msm_snddev_setting_audience_off_call_connect(void)
+{
+	msm_snddev_audience_off_call_route_config();
+	return 0;
+}
+
+int msm_snddev_setting_audience_call_disconnect(void)
+{
+	msm_snddev_audience_call_route_deconfig();
+	return 0;
+}
+
+#endif  /* CONFIG_VP_A2220 */
+ 
 #endif /* CONFIG_MSM7KV2_AUDIO */
 
 static int __init buses_init(void)
@@ -4833,7 +5049,8 @@ static struct ofn_atlab_platform_data optnav_data = {
 
 static int hdmi_comm_power(int on, int show);
 
-#if defined (CONFIG_SENSOR_MC7) || defined (CONFIG_SENSOR_CE147) || defined (CONFIG_SENSOR_S5K4ECGX) || defined (CONFIG_SENSOR_S5K5CCAF)
+#if defined (CONFIG_SENSOR_MC7) || defined (CONFIG_SENSOR_CE147) || \
+    defined (CONFIG_SENSOR_S5K4ECGX) || defined (CONFIG_SENSOR_S5K5CCAF)
 static struct i2c_board_info msm_cam_pm_lp8720_info[] = {
 	{
 		I2C_BOARD_INFO("cam_pm_lp8720", 0x7D),
@@ -6683,6 +6900,58 @@ struct platform_device msm_device_sdio_al = {
 
 #endif /* CONFIG_MSM_SDIO_AL */
 
+#ifdef CONFIG_VP_A2220
+
+static unsigned msm_aud_a2220_gpio[] = {
+	GPIO_CFG(GPIO_AUDIENCE_A2220_PWDN, 0, GPIO_CFG_OUTPUT, GPIO_CFG_PULL_UP, GPIO_CFG_2MA),   /* A1026_WAKEUP */
+	GPIO_CFG(GPIO_AUDIENCE_A2220_RESET, 0, GPIO_CFG_OUTPUT,  GPIO_CFG_PULL_UP, GPIO_CFG_2MA),  /* MSM_AUD_A1026_RESET */ 	
+};
+
+static int __init a2220_gpio_init(void)
+{
+	pr_info("a2220_gpio_init \n");
+
+	config_gpio_table(msm_aud_a2220_gpio, ARRAY_SIZE(msm_aud_a2220_gpio));
+	
+	//Handling GPIO Audience CIP Sel
+	gpio_tlmm_config(GPIO_CFG(GPIO_AUDIECNE_A2220_SWITCH,0,GPIO_CFG_OUTPUT,GPIO_CFG_NO_PULL,GPIO_CFG_2MA),GPIO_CFG_ENABLE); //Audeince Chip Sel
+	gpio_set_value(GPIO_AUDIECNE_A2220_SWITCH, 1);
+	
+	return 0;
+}
+
+static struct i2c_gpio_platform_data a2220_i2c_gpio_data = {
+	.sda_pin    = GPIO_AUDIENCE_A2220_I2C_SDA, // check done
+	.scl_pin    = GPIO_AUDIENCE_A2220_I2C_SCL, //check done
+	.udelay	= 1,
+};
+
+static struct platform_device a2220_i2c_device = {
+	.name	= "i2c-gpio",
+	.id		= 22,	//MSM_A2220_I2C_BUS_ID,
+	.dev		= {
+		.platform_data  = &a2220_i2c_gpio_data,
+	},
+};
+
+static struct a2220_platform_data a2220_data = {
+	.gpio_a2220_micsel = 0, // ??
+	.gpio_a2220_wakeup = GPIO_AUDIENCE_A2220_PWDN,
+	.gpio_a2220_reset = GPIO_AUDIENCE_A2220_RESET,
+	.gpio_a2220_clk = 0,
+	/*.gpio_a2220_int = MAHIMAHI_AUD_A2220_INT,*/
+};
+
+static struct i2c_board_info audience_a2220_i2c_board_info[] = {
+	{
+		I2C_BOARD_INFO("audience_a2220", 0x3E),
+		.platform_data = &a2220_data,
+		/*.irq = MSM_GPIO_TO_INT(MAHIMAHI_AUD_A2220_INT)*/
+	},
+};
+#endif
+
+
 static struct platform_device *uart3_device[] __initdata = {
 	&msm_device_uart3,
 };
@@ -6814,6 +7083,9 @@ static struct platform_device *devices[] __initdata = {
 	&msm_kgsl_2d0,
 #if defined (CONFIG_SENSOR_S5K4ECGX)
 	&msm_camera_sensor_s5k4ecgx,
+#endif
+#if defined (CONFIG_SENSOR_SR130PC10)
+	&msm_camera_sensor_sr130pc10,
 #endif
 #if defined (CONFIG_SENSOR_MC7)
 	&msm_camera_sensor_mc7,
@@ -8787,6 +9059,9 @@ static void __init msm7x30_init(void)
 	snddev_poweramp_gpio_init();
 	aux_pcm_gpio_init();
 #endif
+#ifdef CONFIG_VP_A2220
+	a2220_gpio_init();
+#endif
 #if 1
 	fsa9480_gpio_init();
 #endif
@@ -8810,6 +9085,13 @@ static void __init msm7x30_init(void)
 		ARRAY_SIZE(yamahaamp_boardinfo));
 	pr_info("yda165:register yamaha amp device \n");
 #endif
+
+#ifdef CONFIG_VP_A2220
+	i2c_register_board_info(22, audience_a2220_i2c_board_info,
+		ARRAY_SIZE(audience_a2220_i2c_board_info));
+	pr_info("A2220:register audience device \n");
+#endif
+
 #ifdef CONFIG_SAMSUNG_FM_SI4709
   i2c_register_board_info(19, si4709_info,
 		ARRAY_SIZE(si4709_info));

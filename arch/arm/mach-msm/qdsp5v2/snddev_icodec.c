@@ -564,12 +564,13 @@ static int snddev_icodec_open(struct msm_snddev_info *dev_info)
 			if ((icodec->data->dev_vol_type & (
 				SNDDEV_DEV_VOL_DIGITAL |
 				SNDDEV_DEV_VOL_ANALOG)))
-#if 1//def CONFIG_MACH_APACHE
+#ifdef CONFIG_MACH_APACHE
 			{
 			/*As per QC's suggestion for SR 623568 , return value of  snddev_icodec_set_device_volume_impl
 	 		* is ignored, which was causing device open failure*/	
 				if ( snddev_icodec_set_device_volume_impl(dev_info, dev_info->dev_volume) < 0 ) 
 					printk(" snddev_icodec_set_device_volume_impl returns error\n"); 
+		
 
 			}
 #else
@@ -582,7 +583,7 @@ static int snddev_icodec_open(struct msm_snddev_info *dev_info)
 					mutex_unlock(&drv->rx_lock);
 					goto error;
 				}
-#endif
+#endif				
 		}
 		mutex_unlock(&drv->rx_lock);
 	} else {
@@ -599,7 +600,7 @@ static int snddev_icodec_open(struct msm_snddev_info *dev_info)
 			if ((icodec->data->dev_vol_type & (
 				SNDDEV_DEV_VOL_DIGITAL |
 				SNDDEV_DEV_VOL_ANALOG)))
-#if 1//def CONFIG_MACH_APACHE
+#ifdef CONFIG_MACH_APACHE
 				{
 					if ( snddev_icodec_set_device_volume_impl(dev_info, dev_info->dev_volume) < 0 ) 
 						printk(" snddev_icodec_set_device_volume_impl returns error\n"); 
@@ -614,7 +615,7 @@ static int snddev_icodec_open(struct msm_snddev_info *dev_info)
 					mutex_unlock(&drv->tx_lock);
 					goto error;
 				}
-#endif
+#endif				
 		}
 		mutex_unlock(&drv->tx_lock);
 	}
