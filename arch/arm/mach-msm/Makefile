@@ -227,6 +227,9 @@ endif
 ifdef CONFIG_MACH_ANCORA_TMO
 obj-$(CONFIG_ARCH_MSM7X30) += board-ancora_tmo.o devices-msm7x30.o memory_topology.o samsung_vibrator.o
 endif
+ifdef CONFIG_MACH_APACHE
+obj-$(CONFIG_ARCH_MSM7X30) += board-apache.o devices-msm7x30.o memory_topology.o samsung_vibrator.o
+endif
 ifdef CONFIG_MACH_ARIESVE
 obj-$(CONFIG_ARCH_MSM7X30) += board-ariesve.o devices-msm7x30.o memory_topology.o
 endif
@@ -325,6 +328,9 @@ obj-$(CONFIG_ARCH_MSM7X30) += board-ancora-regulator.o
 endif
 ifdef CONFIG_MACH_ANCORA_TMO
 obj-$(CONFIG_ARCH_MSM7X30) += board-ancora_tmo-regulator.o
+endif
+ifdef CONFIG_MACH_APACHE
+obj-$(CONFIG_ARCH_MSM7X30) += board-apache-regulator.o
 endif
 ifdef CONFIG_MACH_ARIESVE
 obj-$(CONFIG_ARCH_MSM7X30) += board-ariesve-regulator.o
