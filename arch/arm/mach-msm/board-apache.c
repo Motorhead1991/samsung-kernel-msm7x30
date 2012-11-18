@@ -119,10 +119,6 @@
 #include <linux/err.h>
 #endif
 
-#if defined (CONFIG_TOUCHSCREEN_MXT224)
-#include <linux/i2c/mxt224e.h>
-#endif
-
 #define GPIO_BT_WAKE		147
 #define GPIO_BT_HOST_WAKE	145
 #define GPIO_BT_WLAN_REG_ON	144
@@ -3687,8 +3683,7 @@ static struct i2c_board_info micro_usb_i2c_devices[] = {
 };
 #endif
 
-#if defined (CONFIG_TOUCHSCREEN_MXT224)
-
+#if defined (CONFIG_TOUCHSCREEN_QT602240)
 static struct i2c_gpio_platform_data touchscreen_i2c_gpio_data = {
 	.sda_pin    = 71,
 	.scl_pin    = 70,
@@ -3702,231 +3697,153 @@ static struct platform_device touchscreen_i2c_gpio_device = {
 	},
 };
 
-#define GPIO_TSP_SDA 71
-#define GPIO_TSP_SCL 70
-#define GPIO_TSP_INT 119
-#define GPIO_TSP_LDO_ON 133
-
-static void mxt224_power_on(void)
-{
-	printk("%s: enter\n", __func__);
-	
-	gpio_tlmm_config(GPIO_CFG(GPIO_TSP_LDO_ON, 0, GPIO_CFG_OUTPUT, GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA), GPIO_CFG_ENABLE);
-	gpio_tlmm_config(GPIO_CFG(GPIO_TSP_SCL, 0, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL, GPIO_CFG_2MA), GPIO_CFG_ENABLE);
-	gpio_tlmm_config(GPIO_CFG(GPIO_TSP_SDA, 0, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL, GPIO_CFG_2MA), GPIO_CFG_ENABLE);
-	gpio_tlmm_config(GPIO_CFG(GPIO_TSP_INT, 0, GPIO_CFG_INPUT, GPIO_CFG_NO_PULL, GPIO_CFG_2MA), GPIO_CFG_ENABLE);
-
-	gpio_set_value( GPIO_TSP_LDO_ON, 1 ); 
-	msleep(10);
-	gpio_set_value( GPIO_TSP_SCL , 1 ); 
-	gpio_set_value( GPIO_TSP_SDA , 1 ); 
-	gpio_set_value( GPIO_TSP_INT , 1 );
-	
-
-	printk("mxt224_power_on is finished\n");
-}
-static void mxt224_power_off(void)
-{
-	printk("%s: enter\n", __func__);
-	
-	gpio_set_value( GPIO_TSP_LDO_ON, 0 ); 
-
-	printk("mxt224_power_off is finished\n"); 
-}
-
-
-#define MXT224_MAX_MT_FINGERS 10
-/*
-	Configuration for MXT224
-*/
-static u8 t7_config[] = {GEN_POWERCONFIG_T7,
-				64, 255, 15};
-static u8 t8_config[] = {GEN_ACQUISITIONCONFIG_T8,
-				10, 0, 5, 0, 0, 0, 9, 30};
-static u8 t9_config[] = {TOUCH_MULTITOUCHSCREEN_T9,
-				131, 0, 0, 19, 11, 0, 32, MXT224_THRESHOLD, 2, 1, 0, 10, 1,
-				11, MXT224_MAX_MT_FINGERS, 5, 40, 10, 31, 3,
-				223, 1, 0, 0, 0, 0, 143, 55, 143, 90, 18};
-
-static u8 t18_config[] = {SPT_COMCONFIG_T18,
-				0, 1};
-static u8 t20_config[] = {PROCI_GRIPFACESUPPRESSION_T20,
-				7, 0, 0, 0, 0, 0, 0, 30, 20, 4, 15, 10};
-static u8 t22_config[] = {PROCG_NOISESUPPRESSION_T22,
-				13, 0, 0, 0, 0, 0, 0, 3, 30, 0, 0,  29, 34, 39,
-				49, 58, 3};
-static u8 t28_config[] = {SPT_CTECONFIG_T28,
-				0, 0, 3, 16, 19, 60};
-static u8 end_config[] = {RESERVED_T255};
-
-static const u8 *mxt224_config[] = {
-	t7_config,
-	t8_config,
-	t9_config,
-	t18_config,
-	t20_config,
-	t22_config,
-	t28_config,
-	end_config,
+#ifdef NOT_USE
+static struct platform_device touchscreen_device_qt602240 = {
+	.name = "qt602240-ts",
+	.id = -1,
 };
-
-/*
-	Configuration for MXT224-E
-*/
-static u8 t7_config_e[] = {GEN_POWERCONFIG_T7,
-				48,		/* IDLEACQINT */
-				255,	/* ACTVACQINT */
-				25 		/* ACTV2IDLETO: 25 * 200ms = 5s */};
-static u8 t8_config_e[] = {GEN_ACQUISITIONCONFIG_T8,
-				27, 0, 5, 1, 0, 0, 4, 35, 40, 55};
-				
-				
-#if 1 /* MXT224E_0V5_CONFIG */	
-/* NEXTTCHDI added */
-static u8 t9_config_e[] = {TOUCH_MULTITOUCHSCREEN_T9,
-				139, 0, 0, 19, 11, 0, 32, 50, 2, 1,
-				10, 
-				15,		/* MOVHYSTI */
-				1, 46, MXT224_MAX_MT_FINGERS, 5, 40, 10, 31, 3,
-				223, 1, 10, 10, 10, 10, 143, 40, 143, 80,
-				18, 15, 50, 50, 0};
-#else
-static u8 t9_config_e[] = {TOUCH_MULTITOUCHSCREEN_T9,
-				139, 0, 0, 19, 11, 0, 16, MXT224_THRESHOLD, 2, 1, 10, 3, 1,
-				0, MXT224_MAX_MT_FINGERS, 10, 40, 10, 31, 3,
-				223, 1, 10, 10, 10, 10, 143, 40, 143, 80, 18, 15, 50, 50};
 #endif
 
-
-
-static u8 t15_config_e[] = {TOUCH_KEYARRAY_T15,
-				0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-
-static u8 t18_config_e[] = {SPT_COMCONFIG_T18,
-				0, 0};
-
-static u8 t23_config_e[] = {TOUCH_PROXIMITY_T23,
-				0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-
-static u8 t25_config_e[] = {SPT_SELFTEST_T25,
-				0, 0, 0, 0, 0, 0, 0, 0};
-
-static u8 t40_config_e[] = {PROCI_GRIPSUPPRESSION_T40,
-				0, 0, 0, 0, 0};
-
-static u8 t42_config_e[] = {PROCI_TOUCHSUPPRESSION_T42,
-				0, 0, 0, 0, 0, 0, 0, 0};
-
-static u8 t46_config_e[] = {SPT_CTECONFIG_T46,
-				0, 3, 24, 32, 0, 0, 1, 0, 0};
-
-static u8 t47_config_e[] = {PROCI_STYLUS_T47,
-				0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-
-#if 1 /*MXT224E_0V5_CONFIG */
-static u8 t48_config_e_normal[] = {PROCG_NOISESUPPRESSION_T48,
-				3, 132, 64, 0, 0, 0, 0, 0, 10, 20,
-				0, 0, 0, 6, 6, 0, 0, 64, 4, 64,
-				10, 0, 20, 5, 0, 38, 0, 5, 0, 0,
-				0, 0, 0, 0, 32, 50, 2, 
-				15,		/* MOVHYSTI */ 
-				1, 11,
-				10, 5, 40, 10, 10, 10, 10, 143, 40, 143,
-				80, 18, 15, 0};
-static u8 t48_config_e_ta[] = {PROCG_NOISESUPPRESSION_T48,
-				3, 132, 80, 0, 0, 0, 0, 0, 10, 20,
-				0, 0, 0, 6, 6, 0, 0, 64, 4, 64,
-				10, 0, 20, 5, 0, 38, 0, 20, 0, 0,
-				0, 0, 0, 0, 0, 35, 2, 
-				15,		/* MOVHYSTI */ 
-				1, 47,
-				10, 5, 40, 230, 240, 0, 10, 170, 48, 143,
-				80, 18, 8, 0};
-#else
-/*static u8 t48_config_e[] = {PROCG_NOISESUPPRESSION_T48,
-				1, 0, 40, 0, 0, 0, 0, 0, 0, 0, 0, 60, 31, 6,
-				50, 64, 100};*/
-#endif
-
-
-static u8 end_config_e[] = {RESERVED_T255};
-
-static const u8 *mxt224e_config[] = {
-	t7_config_e,
-	t8_config_e,
-	t9_config_e,
-	t15_config_e,
-	t18_config_e,
-	t23_config_e,
-	t25_config_e,
-	t40_config_e,
-	t42_config_e,
-	t46_config_e,
-	t47_config_e,
-	t48_config_e_normal,
-	t48_config_e_ta,
-	end_config_e,
-};
-
-void mxt224_orient_branch(int orient_swap)
-{
-	if (orient_swap == MXT224_ORIENT_SWAP_NN ){
-		t9_config[MXT_OREINT]= MXT224_ORIENT_SWAP_NN; 
-		t9_config_e[MXT_OREINT]= MXT224_ORIENT_SWAP_NN; 
-	}else if(orient_swap == MXT224_ORIENT_SWAP_XY ){			
-		// default 
-		t9_config[MXT_OREINT]= MXT224_ORIENT_SWAP_XY; 
-		t9_config_e[MXT_OREINT]= MXT224_ORIENT_SWAP_XY; 
-	}
-
-}
-
-
-
-static void mxt224_register_callback(void *function)
-{
-	charging_cbs.tsp_set_charging_cable = function;
-}
-
-static void mxt224_read_ta_status(bool *ta_status)
-{
-	*ta_status = is_cable_attached;
-}
-
-#define GPIO_MXT224_TOUCH_INT	119 //jckim@ta
-
-static struct mxt224_platform_data mxt224_data = {
-	.max_finger_touches = MXT224_MAX_MT_FINGERS,
-	.gpio_read_done = GPIO_MXT224_TOUCH_INT,
-	.config = mxt224_config,
-	.config_e = mxt224e_config,
-	.t48_ta_cfg = t48_config_e_ta,	
-	.min_x = 0,
-    .max_x = 480,
-	.min_y = 0,
-    .max_y = 800,
-	.min_z = 0,
-	.max_z = 255,
-	.min_w = 0,
-	.max_w = 30,
-	.power_on = mxt224_power_on,
-	.power_off = mxt224_power_off,
-	.register_cb = mxt224_register_callback,
-	.read_ta_status = mxt224_read_ta_status,
-
-	.orient_barnch = mxt224_orient_branch,
-};
-
-static struct i2c_board_info mxt224_touch_boardinfo[] __initdata = {
+static struct i2c_board_info qt602240_touch_boardinfo[] __initdata = {
 	{
-		I2C_BOARD_INFO( MXT224_DEV_NAME, 0x4A ),
+		I2C_BOARD_INFO("qt602240-ts", 0x4A ),
 		.irq = MSM_GPIO_TO_INT(119),
-		.platform_data = &mxt224_data,
-				
 	}
 };
 
-#endif //(CONFIG_TOUCHSCREEN_MXT224)
+#ifdef CONFIG_KEYPAD_CYPRESS_TOUCH
+static struct i2c_gpio_platform_data touch_keypad_i2c_platdata = {
+	.sda_pin		= _3_TOUCH_SDA_28V,
+	.scl_pin		= _3_TOUCH_SCL_28V,
+	.udelay 		= 0, /* 250KHz */
+	.sda_is_open_drain	= 0,
+	.scl_is_open_drain	= 0,
+	.scl_is_output_only	= 0,
+};
+
+static struct platform_device touch_keypad_i2c_device = {
+	.name			= "i2c-gpio",
+	.id			= 20,
+	.dev.platform_data	= &touch_keypad_i2c_platdata,
+};
+static void touch_keypad_gpio_init(void)
+{
+	int ret = 0;
+
+	gpio_tlmm_config(GPIO_CFG(_3_TOUCH_EN, 0, GPIO_CFG_OUTPUT,
+				  GPIO_CFG_NO_PULL, GPIO_CFG_2MA), GPIO_CFG_ENABLE);
+	gpio_set_value(_3_TOUCH_EN, 1);
+
+	printk("touch_keypad_gpio_init.\n");	
+}
+
+static void touch_keypad_onoff(int onoff)
+{
+	int i = 0;
+//	gpio_direction_output(_3_TOUCH_EN, onoff);
+	gpio_tlmm_config(GPIO_CFG(_3_TOUCH_EN, 0, GPIO_CFG_OUTPUT,
+				  GPIO_CFG_NO_PULL, GPIO_CFG_2MA), GPIO_CFG_ENABLE);
+
+	while(i < 5)
+	{
+		gpio_set_value(_3_TOUCH_EN, onoff);
+
+		if (onoff == TOUCHKEY_OFF)
+			msleep(30);
+		else
+			msleep(25);
+
+		if(gpio_get_value(_3_TOUCH_EN) == 1)
+			break;
+
+		i++;
+	}		
+
+	printk("touch_keypad_onoff %d , %d.\n",onoff, gpio_get_value(_3_TOUCH_EN));		
+}
+
+static const int touch_keypad_code[] = {
+	KEY_MENU,
+	KEY_BACK,
+};
+
+static struct touchkey_platform_data touchkey_data = {
+	.keycode_cnt = ARRAY_SIZE(touch_keypad_code),
+	.keycode = touch_keypad_code,
+	.touchkey_onoff = touch_keypad_onoff,
+};
+
+static struct i2c_board_info touchkey_info[] __initdata = {
+	{
+		I2C_BOARD_INFO(CYPRESS_TOUCHKEY_DEV_NAME, 0x20),
+		.platform_data = &touchkey_data,			
+		.irq = MSM_GPIO_TO_INT(_3_TOUCH_INT),
+	},
+};
+
+#endif
+
+static int oliver_tsp_ldo_on(void)
+{
+	int rc = 0;
+	struct regulator *vreg_ldo2, *vreg_ldo10 = NULL;
+
+	printk("[TSP] M1 TSP LDO init\n");
+	// VREG_TSP_1.8V
+	vreg_ldo2 = regulator_get(NULL, "gp4");		
+	if (IS_ERR(vreg_ldo2)) {
+		rc = PTR_ERR(vreg_ldo2);
+		pr_err("%s: gp6 vreg get failed (%d)\n",
+		       __func__, rc);
+		return rc;
+	}
+
+	// VREG_TSP_A3.0V
+	// Oliver Board rev univ01 ldo10 is gp11
+	vreg_ldo10 = regulator_get(NULL, "xo_out"); 
+	if (IS_ERR(vreg_ldo10)) {
+		rc = PTR_ERR(vreg_ldo10);
+		pr_err("%s: gp9 vreg get failed (%d)\n",
+		       __func__, rc);
+		return rc;
+	}
+	rc =  regulator_set_voltage(vreg_ldo2, 1800000,1800000);
+	if (rc) {
+		pr_err("%s: vreg LDO2 set level failed (%d)\n",
+		       __func__, rc);
+		return rc;
+	}
+
+	rc = regulator_set_voltage(vreg_ldo10, 3000000,3000000);
+	if (rc) {
+		pr_err("%s: vreg LDO10 set level failed (%d)\n",
+		       __func__, rc);
+		return rc;
+	}
+
+	rc = regulator_enable(vreg_ldo2);
+
+	if (rc) {
+		pr_err("%s: LDO2 vreg enable failed (%d)\n",
+		       __func__, rc);
+		return rc;
+	}
+
+	rc = regulator_enable(vreg_ldo10);
+
+	if (rc) {
+		pr_err("%s: LDO10 vreg enable failed (%d)\n",
+		       __func__, rc);
+		return rc;
+	}
+
+	mdelay(5);		/* ensure power is stable */
+
+	return rc;
+
+}
+
+#endif
 
 #if defined(CONFIG_SENSOR_S5K4ECGX)
 static struct i2c_board_info msm_cam_pm_lp8720_info[] = {
@@ -5730,10 +5647,7 @@ static struct platform_device *devices[] __initdata = {
 #endif
 	&msm_device_adspdec,
 	&qup_device_i2c,
-#ifdef CONFIG_TOUCHSCREEN_MELFAS_MCS8000
-	&touch_i2c_gpio_device,
-#endif
-#if defined (CONFIG_TOUCHSCREEN_MXT224)
+#if defined (CONFIG_TOUCHSCREEN_QT602240)	
 	&touchscreen_i2c_gpio_device,
 #endif
 #if 1
@@ -7642,6 +7556,9 @@ static void __init msm7x30_init(void)
 #ifdef CONFIG_MAX17043_FUEL_GAUGE
 	fg17043_gpio_init();
 #endif
+#if defined(CONFIG_TOUCHSCREEN_QT602240)
+	oliver_tsp_ldo_on();
+#endif
 #if defined(CONFIG_CHARGER_SMB328A)
 	fg_smb_gpio_init();
 #endif
@@ -7681,20 +7598,9 @@ static void __init msm7x30_init(void)
 			ARRAY_SIZE(msm_i2c_gsbi7_timpani_info));
 #endif
 
-if(board_hw_revision > 1) /* [diony][Ancora] REV0.0 : 0xAC,  REV0.1 : 0x5A */
-{
-	i2c_register_board_info(4 /* QUP ID */, msm_camera_rev01_boardinfo,
-			ARRAY_SIZE(msm_camera_rev01_boardinfo));
-}
-else
-{
-	i2c_register_board_info(4 /* QUP ID */, msm_camera_boardinfo,
-			ARRAY_SIZE(msm_camera_boardinfo));
-}
-
-#if defined (CONFIG_TOUCHSCREEN_MELFAS_MCS8000)
-	i2c_register_board_info(14, touch_i2c_devices,
-			ARRAY_SIZE(touch_i2c_devices));
+#if defined (CONFIG_TOUCHSCREEN_QT602240)
+	i2c_register_board_info(0, qt602240_touch_boardinfo,
+		ARRAY_SIZE(qt602240_touch_boardinfo));
 #endif
 
 #ifdef CONFIG_SENSORS_AK8975
