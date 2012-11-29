@@ -71,4 +71,4 @@ obj-$(CONFIG_TOUCHSCREEN_MSM_LEGACY)		+= msm_touch.o
 obj-$(CONFIG_TOUCHSCREEN_CY8C_TS)	+= cy8c_ts.o
 obj-$(CONFIG_TOUCHSCREEN_CYTTSP_I2C)       += cyttsp-i2c.o
 obj-$(CONFIG_TOUCHSCREEN_MELFAS_MCS8000)	+= ancora/
-obj-$(CONFIG_TOUCHSCREEN_MXT224E)       += mxt224e.o
+obj-$(CONFIG_TOUCHSCREEN_MXT224)       += mxt224e.o
