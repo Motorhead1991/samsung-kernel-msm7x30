@@ -1113,7 +1113,7 @@ static const unsigned int surf_keymap[] = {
 	KEY(11, 7, KEY_RIGHTSHIFT),
 };
 
-static const unsigned int ancora_keymap[] = {
+static const unsigned int apache_keymap[] = {
 	KEY(0, 0, KEY_RESERVED),
 	KEY(0, 1, KEY_RESERVED),
 	KEY(0, 2, KEY_RESERVED),
@@ -1121,16 +1121,20 @@ static const unsigned int ancora_keymap[] = {
 	KEY(1, 0, KEY_RESERVED),
 	KEY(1, 1, KEY_VOLUMEDOWN),
 	KEY(1, 2, KEY_VOLUMEUP),
+        
+        KEY(2, 0, KEY_RESERVED),
+	KEY(2, 1, KEY_BACK),
+	KEY(2, 2, KEY_SEARCH)
 };
 
-static struct matrix_keymap_data ancora_keymap_data = {
-	.keymap_size	= ARRAY_SIZE(ancora_keymap),
-	.keymap		= ancora_keymap,
+static struct matrix_keymap_data apache_keymap_data = {
+	.keymap_size	= ARRAY_SIZE(apache_keymap),
+	.keymap		= apache_keymap,
 };
 
-static struct pm8xxx_keypad_platform_data ancora_keypad_data = {
+static struct pm8xxx_keypad_platform_data apache_keypad_data = {
 	.input_name		= "sec_key",
-	.input_phys_device	= "ancora_keypad/input0",
+	.input_phys_device	= "apache_keypad/input0",
 	.num_rows		= 5,
 	.num_cols		= 5,
 	.rows_gpio_start	= PM8058_GPIO_PM_TO_SYS(8),
@@ -1140,7 +1144,7 @@ static struct pm8xxx_keypad_platform_data ancora_keypad_data = {
 	.row_hold_ns		= 91500,
 	.debounce_ms_gpiokey	= 30,
 	.wakeup			= 1,
-	.keymap_data            = &ancora_keymap_data,
+	.keymap_data            = &apache_keymap_data,
 };
 
 static struct pm8058_pwm_pdata pm8058_pwm_data = {
@@ -2360,7 +2364,7 @@ static int __init buses_init(void)
 		pr_err("%s: gpio_tlmm_config (gpio=%d) failed\n",
 		       __func__, PMIC_GPIO_INT);
 
-		pm8058_7x30_data.keypad_pdata = &ancora_keypad_data;
+		pm8058_7x30_data.keypad_pdata = &apache_keypad_data;
 
 	return 0;
 }
