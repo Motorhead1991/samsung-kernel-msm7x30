@@ -1115,8 +1115,8 @@ static const unsigned int surf_keymap[] = {
 
 static const unsigned int apache_keymap[] = {
 	KEY(0, 0, KEY_RESERVED),
-	KEY(0, 1, KEY_RESERVED),
-	KEY(0, 2, KEY_RESERVED),
+	KEY(0, 1, KEY_MENU),
+	KEY(0, 2, KEY_HOME),
 
 	KEY(1, 0, KEY_RESERVED),
 	KEY(1, 1, KEY_VOLUMEDOWN),
