@@ -1486,12 +1486,12 @@ static struct adie_codec_action_unit speaker_loopback_tx_48KHz_osr256_actions[] 
 	ADIE_SPEAKER_LOOPBACK_TX_48000_256;
 #endif
 
-//#if defined (CONFIG_MACH_APACHE)
-//static struct adie_codec_action_unit handset_audience_call_rx_48KHz_osr256_actions[] =
-//	ADIE_HANDSET_AUDIENCE_CALL_RX_48000_256;
-//static struct adie_codec_action_unit handset_audience_call_tx_48KHz_osr256_actions[] =
-//	ADIE_HANDSET_AUDIENCE_CALL_TX_48000_256;
-//#endif
+#if defined (CONFIG_MACH_APACHE)
+static struct adie_codec_action_unit handset_audience_call_rx_48KHz_osr256_actions[] =
+	ADIE_HANDSET_AUDIENCE_CALL_RX_48000_256;
+static struct adie_codec_action_unit handset_audience_call_tx_48KHz_osr256_actions[] =
+	ADIE_HANDSET_AUDIENCE_CALL_TX_48000_256;
+#endif
 
 static struct adie_codec_hwsetting_entry handset_rx_settings[] = {
 	{
