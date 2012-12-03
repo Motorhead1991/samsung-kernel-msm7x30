@@ -2133,32 +2133,32 @@ static struct adie_codec_hwsetting_entry speaker_loopback_tx_settings[] = {
 };
 #endif
 
-//#if defined (CONFIG_MACH_APACHE)
-//static struct adie_codec_hwsetting_entry handset_audience_call_rx_settings[] = {
-//	{
-//#ifdef CONFIG_VP_A2220_16KHZ
-//		.freq_plan = 16000,
-//#else
-//		.freq_plan = 48000,
-//#endif
-//		.osr = 256,
-//		.actions = handset_audience_call_rx_48KHz_osr256_actions,
-//		.action_sz = ARRAY_SIZE(handset_audience_call_rx_48KHz_osr256_actions),
-//	}
-//};
-//static struct adie_codec_hwsetting_entry handset_audience_call_tx_settings[] = {
-//	{
-//#ifdef CONFIG_VP_A2220_16KHZ
-//		.freq_plan = 16000,
-//#else
-//		.freq_plan = 48000,
-//#endif
-//		.osr = 256,
-//		.actions = handset_audience_call_tx_48KHz_osr256_actions,
-//		.action_sz = ARRAY_SIZE(handset_audience_call_tx_48KHz_osr256_actions),
-//	}
-//};
-//#endif
+#if defined (CONFIG_MACH_APACHE)
+static struct adie_codec_hwsetting_entry handset_audience_call_rx_settings[] = {
+	{
+#ifdef CONFIG_VP_A2220_16KHZ
+		.freq_plan = 16000,
+#else
+		.freq_plan = 48000,
+#endif
+		.osr = 256,
+		.actions = handset_audience_call_rx_48KHz_osr256_actions,
+		.action_sz = ARRAY_SIZE(handset_audience_call_rx_48KHz_osr256_actions),
+	}
+};
+static struct adie_codec_hwsetting_entry handset_audience_call_tx_settings[] = {
+	{
+#ifdef CONFIG_VP_A2220_16KHZ
+		.freq_plan = 16000,
+#else
+		.freq_plan = 48000,
+#endif
+		.osr = 256,
+		.actions = handset_audience_call_tx_48KHz_osr256_actions,
+		.action_sz = ARRAY_SIZE(handset_audience_call_tx_48KHz_osr256_actions),
+	}
+};
+#endif
 
 static struct adie_codec_dev_profile handset_rx_profile = {
 	.path_type = ADIE_CODEC_RX,
