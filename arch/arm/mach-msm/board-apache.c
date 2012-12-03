@@ -2058,9 +2058,9 @@ void msm_snddev_tx_ear_route_config(void)
 {
 	pr_debug("%s()\n", __func__);
 	gpio_set_value_cansleep(PM8058_GPIO_PM_TO_SYS(PMIC_GPIO_EAR_MICBIAS_EN), 1);
-//#ifdef CONFIG_VP_A2220  // mdhwang_Test
-//	gpio_set_value_cansleep(PM8058_GPIO_PM_TO_SYS(PMIC_GPIO_MICBIAS_EN), 1);
-//#endif
+#ifdef CONFIG_VP_A2220  // mdhwang_Test
+	gpio_set_value_cansleep(PM8058_GPIO_PM_TO_SYS(PMIC_GPIO_MICBIAS_EN), 1);
+#endif
 #ifdef CONFIG_SAMSUNG_JACK
 	tx_set_flag = 1;
 #endif
@@ -2072,9 +2072,9 @@ void msm_snddev_tx_ear_route_deconfig(void)
 	pr_debug("%s()\n", __func__);
 	if ( ! ( ( sec_jack_get_det_jack_state() ) && (!sec_jack_get_send_key_state()) ) )
 		gpio_set_value_cansleep(PM8058_GPIO_PM_TO_SYS(PMIC_GPIO_EAR_MICBIAS_EN), 0);
-//#ifdef CONFIG_VP_A2220  // mdhwang_Test
-//	gpio_set_value_cansleep(PM8058_GPIO_PM_TO_SYS(PMIC_GPIO_MICBIAS_EN), 0);
-//#endif
+#ifdef CONFIG_VP_A2220  // mdhwang_Test
+	gpio_set_value_cansleep(PM8058_GPIO_PM_TO_SYS(PMIC_GPIO_MICBIAS_EN), 0);
+#endif
 #ifdef CONFIG_SAMSUNG_JACK
 	tx_set_flag = 0;
 #endif

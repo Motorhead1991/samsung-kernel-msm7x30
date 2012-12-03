@@ -4319,10 +4319,10 @@ static const struct file_operations snddev_hsed_config_debug_fops = {
 };
 #endif
 
-//#ifdef CONFIG_VP_A2220
+#ifdef CONFIG_VP_A2220
 //#define A1026_DEVICE_NAME "dev/audience_a1026"
-//extern int a2220_ioctl2(unsigned int cmd , unsigned long arg);
-//#endif
+extern int a2220_ioctl2(unsigned int cmd , unsigned long arg);
+#endif
 
 void __ref msm_snddev_init(void)
 {
