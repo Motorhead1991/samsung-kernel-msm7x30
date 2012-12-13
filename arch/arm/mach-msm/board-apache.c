@@ -1118,8 +1118,8 @@ static const unsigned int surf_keymap[] = {
 
 static const unsigned int apache_keymap[] = {
 	KEY(0, 0, KEY_RESERVED),
-	KEY(0, 1, KEY_RESERVED),
-	KEY(0, 2, KEY_RESERVED),
+	KEY(0, 1, KEY_MENU),
+	KEY(0, 2, KEY_HOME),
 
 	KEY(1, 0, KEY_RESERVED),
 	KEY(1, 1, KEY_VOLUMEDOWN),
@@ -1970,25 +1970,25 @@ static struct snd_set_ampgain init_ampgain[] = {
 	[0] = {
 		.in1_gain = 2,
 		.in2_gain = 2,
-		.hp_att = 26,
+		.hp_att = 30,
 		.hp_gainup = 0,
-		.sp_att = 31,
+		.sp_att = 29,
 		.sp_gainup = 0,
 	},
 	[1] = { /* [HSS] headset_call, speaker_call */
 		.in1_gain = 2,
 		.in2_gain = 0,
-		.hp_att = 14,
+		.hp_att = 25,
 		.hp_gainup = 0,
 		.sp_att = 31,
 		.sp_gainup = 0,
 	},
 	[2] = { /* [HSS] headset_speaker */
 		.in1_gain = 5,
-		.in2_gain = 2,
-		.hp_att = 13,
+		.in2_gain = 0,
+		.hp_att = 10,
 		.hp_gainup = 0,
-		.sp_att = 31,
+		.sp_att = 29,
 		.sp_gainup = 2,
 	},
 };

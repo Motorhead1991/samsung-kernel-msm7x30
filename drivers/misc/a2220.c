@@ -6454,7 +6454,7 @@ a2220_ioctl(struct inode *inode, struct file *file, unsigned int cmd,
 			//if (copy_from_user(&img, argp, sizeof(img)))
 			//	return -EFAULT;
 			//rc = a2220_bootup_init(file, &img);
-			rc=a2220_bootup_init(&img);
+			rc = a2220_bootup_init(&img);
 			break;
 		case A2220_SET_CONFIG:
 			//if (copy_from_user(&pathid, argp, sizeof(pathid)))
