@@ -123,6 +123,12 @@
 #include <linux/i2c/mxt224e.h>
 #endif
 
+#ifdef CONFIG_VP_A2220
+#include <linux/a2220.h>
+#endif
+
+#include <mach/apache-gpio.h>
+
 #define GPIO_BT_WAKE		147
 #define GPIO_BT_HOST_WAKE	145
 #define GPIO_BT_WLAN_REG_ON	144
@@ -142,12 +148,10 @@
 #define GPIO_WLAN_LEVEL_NONE	2
 
 #define GPIO_BT_RESET		146
-#ifdef CONFIG_VP_A2220
-#include <linux/a2220.h>
-#endif
 #define WLAN_EN_GPIO		144 //WLAN_BT_EN
 #define WLAN_RESET		127 //Reset
 #define WLAN_HOST_WAKE		111
+#define MSM_A2220_I2C_BUS_ID     18
 
 struct class *sec_class;
 EXPORT_SYMBOL(sec_class);
@@ -1970,25 +1974,25 @@ static struct snd_set_ampgain init_ampgain[] = {
 	[0] = {
 		.in1_gain = 2,
 		.in2_gain = 2,
-		.hp_att = 30,
+		.hp_att = 26,
 		.hp_gainup = 0,
-		.sp_att = 29,
+		.sp_att = 31,
 		.sp_gainup = 0,
 	},
 	[1] = { /* [HSS] headset_call, speaker_call */
 		.in1_gain = 2,
 		.in2_gain = 0,
-		.hp_att = 25,
+		.hp_att = 14,
 		.hp_gainup = 0,
 		.sp_att = 31,
 		.sp_gainup = 0,
 	},
 	[2] = { /* [HSS] headset_speaker */
 		.in1_gain = 5,
-		.in2_gain = 0,
-		.hp_att = 10,
+		.in2_gain = 2,
+		.hp_att = 13,
 		.hp_gainup = 0,
-		.sp_att = 29,
+		.sp_att = 31,
 		.sp_gainup = 2,
 	},
 };
@@ -2364,183 +2368,6 @@ int mi2s_unconfig_clk_gpio(void)
 	return 0;
 }
 
-#ifdef CONFIG_VP_A2220
-extern int a2220_ioctl2(unsigned int cmd , unsigned long arg);
-void msm_snddev_audience_call_route_config(void)
-{
-	pr_info("%s()\n", __func__);
-	
-	//msm_snddev_call_route_config();
-	gpio_set_value(GPIO_AUDIECNE_A2220_SWITCH, 0);
-
-	a2220_ioctl2(A2220_SET_CONFIG , A2220_PATH_INCALL_RECEIVER);	
-
-	return;
-}
-
-void msm_snddev_audience_off_call_route_config(void)
-{
-	pr_info("%s()\n", __func__);
-	
-	//msm_snddev_call_route_config();
-	gpio_set_value(GPIO_AUDIECNE_A2220_SWITCH, 0);
-
-	a2220_ioctl2(A2220_SET_CONFIG , A2220_PATH_INCALL_RECEIVER_OFF);	
-
-	return;
-}
-
-void msm_snddev_audience_call_route_deconfig(void)
-{
-	pr_info("%s()\n", __func__);
-
-	//msm_snddev_call_route_deconfig();
-	gpio_set_value(GPIO_AUDIECNE_A2220_SWITCH, 1);
-	a2220_ioctl2(A2220_SET_CONFIG , A2220_PATH_SUSPEND);	
-
-#ifdef AUDIENCE_BYPASS //(+)dragonball Multimedia bypass
-	//if(get_hw_rev() < 0x05)
-	if (1)
-	{
-		mdelay(5);
-		a2220_ioctl2(A2220_SET_CONFIG , A2220_PATH_BYPASS_MULTIMEDIA);
-	}
-#endif	
-
-	return;
-}
-
-void msm_snddev_audience_call_route_speaker_config(void)
-{
-	pr_info("%s()\n", __func__);
-
-	//msm_snddev_call_route_config();
-	gpio_set_value(GPIO_AUDIECNE_A2220_SWITCH, 0); //switch  to I2S audience
-
-	//a2220_ioctl2(A2220_SET_CONFIG , A2220_PATH_INCALL_RECEIVER);	
-	a2220_ioctl2(A2220_SET_CONFIG , A2220_PATH_INCALL_SPEAKER);	
-
-	return;
-}
-void msm_snddev_audience_call_route_speaker_deconfig(void)
-{
-	pr_info("%s()\n", __func__);
-
-	//msm_snddev_call_route_deconfig();
-	// ysseo 20110420 : to use a2220 Multimedia mode
-	gpio_set_value(GPIO_AUDIECNE_A2220_SWITCH, 1); //switch  to I2S QTR
-	a2220_ioctl2(A2220_SET_CONFIG , A2220_PATH_SUSPEND);	
-	
-#ifdef AUDIENCE_BYPASS
-	//if(get_hw_rev() < 0x05)
-	if (1)
-	{
-		mdelay(5);
-		a2220_ioctl2(A2220_SET_CONFIG , A2220_PATH_BYPASS_MULTIMEDIA);
-	}
-#endif	
-
-	return;
-}
-
-void msm_snddev_audience_speaker_on(void)
-{
-	msm_snddev_audience_call_route_speaker_config();
-
-	pr_info("%s: enable msm_snddev_audience_speaker_on\n", __func__);
-
-	//if (atomic_inc_return(&pamp_ref_cnt) > 1)
-	//	return 0;
-
-	pr_debug("%s: enable stereo spkr amp\n", __func__);
-
-#ifdef CONFIG_SENSORS_YDA165
-	//yda165_speaker_onoff(1); // mdhwang_test
-	yda165_speaker_call_onoff(1);
-#endif
-
-	return;
-}
-
-void msm_snddev_audience_speaker_off(void)
-{
-	pr_info("%s: disable msm_snddev_audience_speaker_off\n", __func__);
-
-	msm_snddev_audience_call_route_speaker_deconfig();
-
-	//if (atomic_dec_return(&pamp_ref_cnt) == 0) {
-		pr_debug("%s: disable stereo spkr amp\n", __func__);
-#ifdef CONFIG_SENSORS_YDA165
-		//yda165_speaker_onoff(0);  // mdhwang_test
-		yda165_speaker_call_onoff(0);
-#endif
-	//}	
-	return;
-}
-
-void msm_snddev_audience_call_route_headset_config(void)
-{
-	pr_info("%s()\n", __func__);
-	gpio_set_value(GPIO_AUDIECNE_A2220_SWITCH, 0); //switch  to I2S audience
-	a2220_ioctl2(A2220_SET_CONFIG , A2220_PATH_INCALL_HEADSET);	
-
-	return;
-}
-void msm_snddev_audience_call_route_headset_deconfig(void)
-{
-	pr_info("%s()\n", __func__);
-	a2220_ioctl2(A2220_SET_CONFIG , A2220_PATH_SUSPEND);	
-
-	gpio_set_value(GPIO_AUDIECNE_A2220_SWITCH, 1); //switch  to I2S QTR
-#ifdef AUDIENCE_BYPASS
-	//if(get_hw_rev() < 0x05)
-	if (1)
-	{
-		mdelay(5);
-		a2220_ioctl2(A2220_SET_CONFIG , A2220_PATH_BYPASS_MULTIMEDIA);
-	}
-#endif	
-
-	return;
-}
-void msm_snddev_audience_poweramp_on_headset(void)
-{
-	msm_snddev_audience_call_route_headset_config();
-#ifdef CONFIG_SENSORS_YDA165
-	//yda165_headset_onoff(1);  // mdhwang_test
-	yda165_headset_call_onoff(1);
-#endif
-	pr_info("%s: power on headset\n", __func__);
-
-	return;
-}
-
-void  msm_snddev_audience_poweramp_off_headset(void)
-{
-	msm_snddev_audience_call_route_headset_deconfig();
-#ifdef CONFIG_SENSORS_YDA165
-	//yda165_headset_onoff(0);  // mdhwang_test
-	yda165_headset_call_onoff(0);
-#endif
-	pr_info("%s: power off headset\n", __func__);
-}
-
-void msm_snddev_setting_audience_call_connect(void)
-{
-	msm_snddev_audience_call_route_config();
-}
-
-void msm_snddev_setting_audience_off_call_connect(void)
-{
-	msm_snddev_audience_off_call_route_config();
-}
-
-void msm_snddev_setting_audience_call_disconnect(void)
-{
-	msm_snddev_audience_call_route_deconfig();
-}
-
-#endif  /* CONFIG_VP_A2220 */
 #endif /* CONFIG_MSM7KV2_AUDIO */
 
 static int __init buses_init(void)
@@ -5834,53 +5661,69 @@ static struct sdio_al_platform_data sdio_al_pdata = {
 };
 
 #ifdef CONFIG_VP_A2220
-
-static unsigned msm_aud_a2220_gpio[] = {
-	GPIO_CFG(GPIO_AUDIENCE_A2220_PWDN, 0, GPIO_CFG_OUTPUT, GPIO_CFG_PULL_UP, GPIO_CFG_2MA),   /* A1026_WAKEUP */
-	GPIO_CFG(GPIO_AUDIENCE_A2220_RESET, 0, GPIO_CFG_OUTPUT,  GPIO_CFG_PULL_UP, GPIO_CFG_2MA),  /* MSM_AUD_A1026_RESET */ 	
-};
-
-static int __init a2220_gpio_init(void)
+static int a2220_hw_init(void)
 {
-	pr_info("a2220_gpio_init \n");
+	int rc = 0;
 
-	config_gpio_table(msm_aud_a2220_gpio, ARRAY_SIZE(msm_aud_a2220_gpio));
-	
-	//Handling GPIO Audience CIP Sel
-	gpio_tlmm_config(GPIO_CFG(GPIO_AUDIECNE_A2220_SWITCH,0,GPIO_CFG_OUTPUT,GPIO_CFG_NO_PULL,GPIO_CFG_2MA),GPIO_CFG_ENABLE); //Audeince Chip Sel
-	gpio_set_value(GPIO_AUDIECNE_A2220_SWITCH, 1);
-	
-	return 0;
+	rc = gpio_request(MSM_AUD_A2220_WAKEUP, "a2220_wakeup");
+	if (rc < 0) {
+		pr_err("%s: gpio request wakeup pin failed\n", __func__);
+		goto err_alloc_data_failed;
+	}
+
+	rc = gpio_direction_output(MSM_AUD_A2220_WAKEUP, 1);
+	if (rc < 0) {
+		pr_err("%s: request wakeup gpio direction failed\n", __func__);
+		goto err_free_gpio;
+	}
+
+	rc = gpio_request(MSM_AUD_A2220_RESET, "a2220_reset");
+	if (rc < 0) {
+		pr_err("%s: gpio request reset pin failed\n", __func__);
+		goto err_free_gpio;
+	}
+
+	rc = gpio_direction_output(MSM_AUD_A2220_RESET, 1);
+	if (rc < 0) {
+		pr_err("%s: request reset gpio direction failed\n", __func__);
+		goto err_free_gpio_all;
+	}
+	gpio_set_value(MSM_AUD_A2220_WAKEUP, 1);
+	gpio_set_value(MSM_AUD_A2220_RESET, 1);
+	return rc;
+
+err_free_gpio_all:
+	gpio_free(MSM_AUD_A2220_RESET);
+err_free_gpio:
+	gpio_free(MSM_AUD_A2220_WAKEUP);
+err_alloc_data_failed:
+	pr_err("a2220_probe - failed\n");
+	return rc;
 }
 
-static struct i2c_gpio_platform_data a2220_i2c_gpio_data = {
-	.sda_pin    = GPIO_AUDIENCE_A2220_I2C_SDA, // check done
-	.scl_pin    = GPIO_AUDIENCE_A2220_I2C_SCL, //check done
-	.udelay	= 1,
-};
-
-static struct platform_device a2220_i2c_device = {
-	.name	= "i2c-gpio",
-	.id		= 22,	//MSM_A2220_I2C_BUS_ID,
-	.dev		= {
-		.platform_data  = &a2220_i2c_gpio_data,
-	},
-};
-
 static struct a2220_platform_data a2220_data = {
-	.gpio_a2220_micsel = 0, // ??
-	.gpio_a2220_wakeup = GPIO_AUDIENCE_A2220_PWDN,
-	.gpio_a2220_reset = GPIO_AUDIENCE_A2220_RESET,
-	.gpio_a2220_clk = 0,
-	/*.gpio_a2220_int = MAHIMAHI_AUD_A2220_INT,*/
+	.a2220_hw_init = a2220_hw_init,
+	.gpio_reset = MSM_AUD_A2220_RESET,
+	.gpio_wakeup = MSM_AUD_A2220_WAKEUP,
 };
 
-static struct i2c_board_info audience_a2220_i2c_board_info[] = {
+static struct i2c_board_info a2220_device[] __initdata = {
 	{
 		I2C_BOARD_INFO("audience_a2220", 0x3E),
 		.platform_data = &a2220_data,
-		/*.irq = MSM_GPIO_TO_INT(MAHIMAHI_AUD_A2220_INT)*/
 	},
+};
+
+static struct i2c_gpio_platform_data  a2220_i2c_gpio_data = {
+	.sda_pin		= GPIO_A2220_I2C_SDA,
+	.scl_pin		= GPIO_A2220_I2C_SCL,
+	.udelay			= 1,
+};
+
+static struct platform_device a2220_i2c_gpio_device = {
+	.name			= "i2c-gpio",
+	.id			= MSM_A2220_I2C_BUS_ID,
+	.dev.platform_data	= &a2220_i2c_gpio_data,
 };
 #endif
 
@@ -6072,9 +5915,6 @@ static struct platform_device *devices[] __initdata = {
 	&msm_ebi1_thermal,
 #ifdef CONFIG_SAMSUNG_JACK
 	&sec_device_jack,
-#endif
-#ifdef CONFIG_VP_A2220
-	&a2220_i2c_device,
 #endif
 };
 
@@ -7879,7 +7719,7 @@ static void __init msm7x30_init(void)
 	aux_pcm_gpio_init();
 #endif
 #ifdef CONFIG_VP_A2220
-	a2220_gpio_init();
+	&msm7x30_device_qup_i2c_gsbi8,
 #endif
 #ifdef CONFIG_USB_SWITCH_FSA9480
 	fsa9480_gpio_init();
@@ -7901,9 +7741,10 @@ static void __init msm7x30_init(void)
 	pr_info("yda165:register yamaha amp device \n");
 #endif
 #ifdef CONFIG_VP_A2220
-	i2c_register_board_info(22, audience_a2220_i2c_board_info,
-		ARRAY_SIZE(audience_a2220_i2c_board_info));
-	pr_info("A2220:register audience device \n");
+static struct msm_i2c_platform_data msm7x30_i2c_qup_gsbi8_pdata = {
+	.clk_freq = 400000,
+	.src_clk_rate = 24000000,
+};
 #endif
 #ifdef CONFIG_SAMSUNG_FM_SI4709
 	i2c_register_board_info(19, si4709_info,
