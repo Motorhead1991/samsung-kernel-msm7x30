@@ -229,6 +229,10 @@ EXPORT_SYMBOL(switch_dev);
 #define OPTNAV_IRQ		20
 #define OPTNAV_CHIP_SELECT	19
 
+#define APACHE_AUD_A2220_WAKEUP        123
+#define APACHE_AUD_A2220_RESET         122
+//#define APACHE_AUD_A2220_CLK   -1
+
 /* Macros assume PMIC GPIOs start at 0 */
 #define PM8058_GPIO_PM_TO_SYS(pm_gpio)     (pm_gpio + NR_GPIO_IRQS)
 #define PM8058_GPIO_SYS_TO_PM(sys_gpio)    (sys_gpio - NR_GPIO_IRQS)
@@ -5830,8 +5834,8 @@ static struct sdio_al_platform_data sdio_al_pdata = {
 #ifdef CONFIG_VP_A2220
 
 static unsigned msm_aud_a2220_gpio[] = {
-	GPIO_CFG(GPIO_AUDIENCE_A2220_PWDN, 0, GPIO_CFG_OUTPUT, GPIO_CFG_PULL_UP, GPIO_CFG_2MA),   /* A1026_WAKEUP */
-	GPIO_CFG(GPIO_AUDIENCE_A2220_RESET, 0, GPIO_CFG_OUTPUT,  GPIO_CFG_PULL_UP, GPIO_CFG_2MA),  /* MSM_AUD_A1026_RESET */ 	
+	GPIO_CFG(APACHE_AUD_A2220_WAKEUP, 0, GPIO_CFG_OUTPUT, GPIO_CFG_PULL_UP, GPIO_CFG_2MA),   /* A2220_WAKEUP */
+	GPIO_CFG(APACHE_AUD_A2220_RESET, 0, GPIO_CFG_OUTPUT,  GPIO_CFG_PULL_UP, GPIO_CFG_2MA),  /* MSM_AUD_A2220_RESET */ 	
 };
 
 static int __init a2220_gpio_init(void)
@@ -5839,6 +5843,10 @@ static int __init a2220_gpio_init(void)
 	pr_info("a2220_gpio_init \n");
 
 	config_gpio_table(msm_aud_a2220_gpio, ARRAY_SIZE(msm_aud_a2220_gpio));
+        gpio_set_value(APACHE_AUD_A2220_RESET, 0);
+        mdelay(1);
+        gpio_set_value(APACHE_AUD_A2220_WAKEUP, 0);
+        mdelay(1);
 	
 	//Handling GPIO Audience CIP Sel
 	gpio_tlmm_config(GPIO_CFG(GPIO_AUDIECNE_A2220_SWITCH,0,GPIO_CFG_OUTPUT,GPIO_CFG_NO_PULL,GPIO_CFG_2MA),GPIO_CFG_ENABLE); //Audeince Chip Sel
@@ -5863,8 +5871,8 @@ static struct platform_device a2220_i2c_device = {
 
 static struct a2220_platform_data a2220_data = {
 	.gpio_a2220_micsel = 0, // ??
-	.gpio_a2220_wakeup = GPIO_AUDIENCE_A2220_PWDN,
-	.gpio_a2220_reset = GPIO_AUDIENCE_A2220_RESET,
+	.gpio_a2220_wakeup = APACHE_AUD_A2220_WAKEUP,
+	.gpio_a2220_reset = APACHE_AUD_A2220_RESET,
 	.gpio_a2220_clk = 0,
 	/*.gpio_a2220_int = MAHIMAHI_AUD_A2220_INT,*/
 };
@@ -5948,7 +5956,7 @@ static struct platform_device *devices[] __initdata = {
 #endif
 	&android_pmem_adsp_device,
 	&android_pmem_audio_device,
-	&msm_device_i2c,
+//	&msm_device_i2c,
 	&msm_device_i2c_2,
 	&msm_device_uart_dm1,
 	&hs_device,
