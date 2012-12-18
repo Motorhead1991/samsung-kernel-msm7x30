@@ -1974,25 +1974,25 @@ static struct snd_set_ampgain init_ampgain[] = {
 	[0] = {
 		.in1_gain = 2,
 		.in2_gain = 2,
-		.hp_att = 26,
+		.hp_att = 30,
 		.hp_gainup = 0,
-		.sp_att = 31,
+		.sp_att = 29,
 		.sp_gainup = 0,
 	},
 	[1] = { /* [HSS] headset_call, speaker_call */
 		.in1_gain = 2,
 		.in2_gain = 0,
-		.hp_att = 14,
+		.hp_att = 25,
 		.hp_gainup = 0,
 		.sp_att = 31,
 		.sp_gainup = 0,
 	},
 	[2] = { /* [HSS] headset_speaker */
 		.in1_gain = 5,
-		.in2_gain = 2,
-		.hp_att = 13,
+		.in2_gain = 0,
+		.hp_att = 10,
 		.hp_gainup = 0,
-		.sp_att = 31,
+		.sp_att = 29,
 		.sp_gainup = 2,
 	},
 };
@@ -3878,6 +3878,7 @@ static struct c1_charging_status_callbacks {
 	void	(*tsp_set_charging_cable) (int type);
 } charging_cbs;
 
+
 static bool is_cable_attached;
 
 static void fsa9480_charger_cb(bool attached)
@@ -3888,11 +3889,16 @@ static void fsa9480_charger_cb(bool attached)
 	if (charging_cbs.tsp_set_charging_cable)
 		charging_cbs.tsp_set_charging_cable(is_cable_attached);
 
+}
+
+static struct fsa9480_platform_data fsa9480_pdata = {
+	.charger_cb = fsa9480_charger_cb
 };
 
 static struct i2c_board_info micro_usb_i2c_devices[] = {
 	{
 		I2C_BOARD_INFO("fsa9480", 0x4A>>1),
+		.platform_data = &fsa9480_pdata,
 		.irq = MSM_GPIO_TO_INT(142),
 	},
 };
