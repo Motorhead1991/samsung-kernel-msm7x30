@@ -154,7 +154,7 @@ EXPORT_SYMBOL(sec_class);
 struct device *switch_dev;
 EXPORT_SYMBOL(switch_dev);
 
-#define MSM_PMEM_SF_SIZE	0x1700000
+#define MSM_PMEM_SF_SIZE	0x1500000
 #ifdef CONFIG_FB_MSM_TRIPLE_BUFFER
 #define MSM_FB_PRIM_BUF_SIZE	(800 * 480 * 4 * 3) /* 4bpp * 3 Pages */
 #else
@@ -176,10 +176,10 @@ EXPORT_SYMBOL(switch_dev);
 
 #define MSM_FB_SIZE roundup(MSM_FB_PRIM_BUF_SIZE + MSM_FB_EXT_BUF_SIZE, 4096)
 
-#define MSM_PMEM_ADSP_SIZE		0x1E00000
+#define MSM_PMEM_ADSP_SIZE		0x1D00000
 #define MSM_FLUID_PMEM_ADSP_SIZE	0x2800000
 #define PMEM_KERNEL_EBI0_SIZE		0x600000
-#define MSM_PMEM_AUDIO_SIZE		0x200000
+#define MSM_PMEM_AUDIO_SIZE		0x80000
 
 #define PMIC_GPIO_INT		27
 #define PMIC_VREG_WLAN_LEVEL	2900
@@ -198,11 +198,6 @@ EXPORT_SYMBOL(switch_dev);
 #endif
 #ifdef CONFIG_SENSORS_AK8975
 #define MSM_GPIO_MSENSE_RST	180  /* MSM GPIO Number 180 */
-#endif
-
-#ifdef CONFIG_SAMSUNG_FM_SI4709
-#define GPIO_FM_INT		121
-#define GPIO_FM_RST		120
 #endif
 
 #define MSM_GPIO_EAR_DET	26
