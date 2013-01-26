@@ -90,7 +90,7 @@ static struct clkctl_acpu_speed *backup_s;
 static struct pll pll2_tbl[] = {
 	{  42, 0, 1, 0 }, /*  806 MHz */
 	{  53, 1, 3, 0 }, /* 1024 MHz */
-/*	{ 125, 0, 1, 1 }, / 1125 MHz */
+/*	{ 125, 0, 1, 1 }, / 1100 MHz */
 	{  63, 1, 3, 0 }, /* 1209 MHz */
 	{  68, 1, 3, 0 }, /* 1306 MHz */
 	{  73, 0, 1, 0 }, /* 1401 MHz */
@@ -128,26 +128,26 @@ static struct clkctl_acpu_speed acpu_freq_tbl[] = {
 	{ 1, 245760, PLL_3,    5, 2,  61440000,  800, VDD_RAW(800) },
 	{ 1, 368640, PLL_3,    5, 1,  122800000, 800, VDD_RAW(800) },
 	{ 1, 450500, PLL_3,    5, 1,  122800000, 800, VDD_RAW(800) },
-	{ 1, 500500, PLL_3,    2, 0,  140000000, 950, VDD_RAW(950) },
-	{ 1, 575500, PLL_3,    2, 0,  140000000, 950, VDD_RAW(950) },
+	{ 1, 500500, PLL_3,    2, 0,  140000000, 875, VDD_RAW(875) },
+	{ 1, 575500, PLL_3,    2, 0,  140000000, 900, VDD_RAW(900) },
 	{ 1, 625000, PLL_3,    2, 0,  140000000, 950, VDD_RAW(950) },
 	/* AXI has MSMC1 implications. See above. */
-	{ 1, 768000, PLL_1,    2, 0,  153600000, 1025, VDD_RAW(1025) },
+	{ 1, 768000, PLL_1,    2, 0,  153600000, 1000, VDD_RAW(1000) },
 	/*
 	 * AXI has MSMC1 implications. See above.
 	 */
-	{ 1, 806400,  PLL_2, 3, 0, UINT_MAX, 1025, VDD_RAW(1025), &pll2_tbl[0]},
+	{ 1, 806400,  PLL_2, 3, 0, UINT_MAX, 1000, VDD_RAW(1000), &pll2_tbl[0]},
 	{ 1, 1024000, PLL_2, 3, 0, UINT_MAX, 1050, VDD_RAW(1050), &pll2_tbl[1]},
 	{ 1, 1209600, PLL_2, 3, 0, UINT_MAX, 1050, VDD_RAW(1050), &pll2_tbl[2]},
 	{ 1, 1306000, PLL_2, 3, 0, UINT_MAX, 1050, VDD_RAW(1050), &pll2_tbl[3]},
-	{ 1, 1401600, PLL_2, 3, 0, UINT_MAX, 1125, VDD_RAW(1125), &pll2_tbl[4]},
+	{ 1, 1401600, PLL_2, 3, 0, UINT_MAX, 1100, VDD_RAW(1100), &pll2_tbl[4]},
 	{ 1, 1455000, PLL_2, 3, 0, UINT_MAX, 1150, VDD_RAW(1150), &pll2_tbl[5]},
 	{ 1, 1490500, PLL_2, 3, 0, UINT_MAX, 1150, VDD_RAW(1150), &pll2_tbl[6]},
-	{ 1, 1525500, PLL_2, 3, 0, UINT_MAX, 1200, VDD_RAW(1200), &pll2_tbl[7]},
+	{ 1, 1525500, PLL_2, 3, 0, UINT_MAX, 1175, VDD_RAW(1175), &pll2_tbl[7]},
 	{ 0 }
 };
 
-#define MAX_CLK 1525500
+#define MAX_CLK 1401600
 unsigned long acpuclk_usr_set_max(void)
 {
 	int ret = acpuclk_get_rate(smp_processor_id());
@@ -360,7 +360,7 @@ static void __init acpuclk_hw_init(void)
 	/* Determine the ACPU clock rate. */
 	switch ((reg_clksel >> 1) & 0x3) {
 	case 0:	/* Running off the output of the raw clock source mux. */
-		reg_clkctl = readl_relaxed(SCSS_CLK_CTL_ADDR);290
+		reg_clkctl = readl_relaxed(SCSS_CLK_CTL_ADDR);
 		src_num = reg_clksel & 0x1;
 		sel = (reg_clkctl >> (12 - (8 * src_num))) & 0x7;
 		div = (reg_clkctl >> (8 -  (8 * src_num))) & 0xF;
@@ -462,7 +462,7 @@ static inline void setup_cpufreq_table(void) { }
  */
 void __init pll2_fixup(void)
 {
-	struct clkctl_acpu_speed *speed = acpu_freq_tbl;290
+	struct clkctl_acpu_speed *speed = acpu_freq_tbl;
 	u8 pll2_l = readl_relaxed(PLL2_L_VAL_ADDR) & 0xFF;
 
 	for ( ; speed->acpu_clk_khz; speed++) {
@@ -518,46 +518,3 @@ static int __init acpuclk_7x30_init(struct acpuclk_soc_data *soc_data)
 struct acpuclk_soc_data acpuclk_7x30_soc_data __initdata = {
 	.init = acpuclk_7x30_init,
 };
-
-#ifdef CONFIG_CPU_FREQ_VDD_LEVELS
-ssize_t acpuclk_get_vdd_levels_str(char *buf)
-{
-	int i, len = 0;
-	if (buf)
-	{
-		mutex_lock(&drv_state.lock);
-		for (i = 0; acpu_freq_tbl[i].acpu_clk_khz; i++)
-		{
-			if(acpu_freq_tbl[i].use_for_scaling==1)
-			{
-				len += sprintf(buf + len, "%8u: %4d\n", acpu_freq_tbl[i].acpu_clk_khz, acpu_freq_tbl[i].vdd_mv);
-			}
-		}
-		mutex_unlock(&drv_state.lock);
-	}
-	return len;
-}
-
-void acpuclk_set_vdd(unsigned int khz, int vdd)
-{
-	int i;
-	unsigned int new_vdd;
-	vdd = vdd / V_STEP * V_STEP;
-	mutex_lock(&drv_state.lock);
-	for (i = 0; acpu_freq_tbl[i].acpu_clk_khz; i++)
-	{
-		if(acpu_freq_tbl[i].use_for_scaling==1)
-		{
-			if (khz == 0)
-				new_vdd = min(max((acpu_freq_tbl[i].vdd_mv + vdd), SEMC_ACPU_MIN_UV_MV), SEMC_ACPU_MAX_UV_MV);
-			else if (acpu_freq_tbl[i].acpu_clk_khz == khz)
-				new_vdd = min(max((unsigned int)vdd, SEMC_ACPU_MIN_UV_MV), SEMC_ACPU_MAX_UV_MV);
-			else continue;
-
-			acpu_freq_tbl[i].vdd_mv = new_vdd;
-			acpu_freq_tbl[i].vdd_raw = VDD_RAW(new_vdd);
-		}
-	}
-	mutex_unlock(&drv_state.lock);
-}
-#endif
