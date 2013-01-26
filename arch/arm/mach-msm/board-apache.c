@@ -4916,8 +4916,8 @@ static int display_common_init(void)
 
 	/* lcd: LDO15 @3.0V */
 	regs[1].supply = "ldo15";
-	regs[1].min_uV = 3000000;
-	regs[1].max_uV = 3000000;
+	regs[1].min_uV = 2750000;
+	regs[1].max_uV = 2750000;
 
 	rc = regulator_bulk_get(NULL, ARRAY_SIZE(regs), regs);
 	if (rc) {
