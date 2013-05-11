@@ -5900,9 +5900,9 @@ static struct platform_device *uart3_device[] __initdata = {
 };
 
 static struct platform_device *devices[] __initdata = {
-//#if defined(CONFIG_SERIAL_MSM) || defined(CONFIG_MSM_SERIAL_DEBUGGER)
-//	&msm_device_uart2,
-//#endif
+#if defined(CONFIG_SERIAL_MSM) || defined(CONFIG_MSM_SERIAL_DEBUGGER)
+	&msm_device_uart2,
+#endif
 #ifdef CONFIG_MSM_PROC_COMM_REGULATOR
 	&msm_proccomm_regulator_dev,
 #endif
