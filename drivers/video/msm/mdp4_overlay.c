@@ -2225,8 +2225,8 @@ struct mdp4_overlay_pipe *mdp4_overlay_pipe_alloc(int ptype, int mixer)
 				continue;
 			init_completion(&pipe->comp);
 			init_completion(&pipe->dmas_comp);
-			pr_debug("%s: pipe=%x ndx=%d num=%d\n", __func__,
-				(int)pipe, pipe->pipe_ndx, pipe->pipe_num);
+                        pr_debug("%s: pipe=%x ndx=%d num=%d type=%d\n", __func__,
+                                (int)pipe, pipe->pipe_ndx, pipe->pipe_num, ptype);
 			return pipe;
 		}
 	}
@@ -3556,9 +3556,10 @@ end:
 	return ret;
 }
 
-int mdp4_overlay_commit(struct fb_info *info, int mixer)
+int mdp4_overlay_commit(struct fb_info *info)
 {
 	struct msm_fb_data_type *mfd = (struct msm_fb_data_type *)info->par;
+	int mixer;
 
 	if (mfd == NULL)
 		return -ENODEV;
@@ -3566,12 +3567,16 @@ int mdp4_overlay_commit(struct fb_info *info, int mixer)
 	if (!mfd->panel_power_on) /* suspended */
 		return -EINVAL;
 
+	mixer = mfd->panel_info.pdest;	/* DISPLAY_1 or DISPLAY_2 */
+
 	if (mixer >= MDP4_MIXER_MAX)
 		return -EPERM;
 
 	mutex_lock(&mfd->dma->ov_mutex);
 
 	mdp4_overlay_mdp_perf_upd(mfd, 1);
+
+	msm_fb_wait_for_fence(mfd);
 
 	if (mixer == MDP4_MIXER0) {
 		if (ctrl->panel_mode & MDP4_PANEL_DSI_CMD) {
@@ -3590,6 +3595,7 @@ int mdp4_overlay_commit(struct fb_info *info, int mixer)
 			mdp4_dtv_pipe_commit(0, 1);
 #endif
 	}
+	msm_fb_signal_timeline(mfd);
 
 	mdp4_overlay_mdp_perf_upd(mfd, 0);
 
