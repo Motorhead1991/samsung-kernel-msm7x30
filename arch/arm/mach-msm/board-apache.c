@@ -1843,32 +1843,7 @@ static struct platform_device msm_camera_sensor_s5k4ecgx = {
 };
 #endif
 
-#ifdef CONFIG_SENSOR_SR030PC30
-static struct msm_camera_sensor_flash_data flash_sr030pc30 = {
-	.flash_type = MSM_CAMERA_FLASH_NONE,
-	.flash_src  = &msm_flash_src_pwm
-};
-static struct msm_camera_sensor_info msm_camera_sensor_sr030pc30_data = {
-	.sensor_name    = "sr030pc30",
-	.sensor_reset   = 0,
-	.sensor_pwd     = 85,
-	.vcm_pwd        = 1,
-	.vcm_enable     = 0,
-	.pdata          = &msm_camera_device_data,
-	.resource       = msm_camera_resources,
-	.num_resources  = ARRAY_SIZE(msm_camera_resources),
-	.flash_data     = &flash_sr030pc30,
-	.csi_if         = 0
-};
-static struct platform_device msm_camera_sensor_sr030pc30 = {
-	.name  	= "msm_camera_sr030pc30",
-	.dev   	= {
-		.platform_data = &msm_camera_sensor_sr030pc30_data,
-	},
-};
-#endif
-
-#ifdef CONFIG_SR130PC10
+#ifdef CONFIG_SENSOR_SR130PC10
 static struct msm_camera_sensor_flash_data flash_sr130pc10 = {
 	.flash_type = MSM_CAMERA_FLASH_NONE,
 	.flash_src  = &msm_flash_src_pwm
@@ -6031,10 +6006,7 @@ static struct platform_device *devices[] __initdata = {
 #if defined (CONFIG_SENSOR_S5K4ECGX)
 	&msm_camera_sensor_s5k4ecgx,
 #endif
-#ifdef CONFIG_SENSOR_SR030PC30
-	&msm_camera_sensor_sr030pc30,
-#endif
-#ifdef CONFIG_SENSOR_SR130PC10
+#if defined (CONFIG_SENSOR_SR130PC10)
 	&msm_camera_sensor_sr130pc10,
 #endif
 #ifdef CONFIG_MT9T013
