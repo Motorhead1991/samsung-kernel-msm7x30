@@ -990,7 +990,9 @@ static void report_input_data(struct mxt224_data *data)
 		input_report_abs(data->input_dev, ABS_MT_POSITION_Y, data->fingers[i].y);
 		input_report_abs(data->input_dev, ABS_MT_TOUCH_MAJOR, data->fingers[i].z);
 		input_report_abs(data->input_dev, ABS_MT_WIDTH_MAJOR, data->fingers[i].w);
-		input_report_abs(data->input_dev, ABS_MT_TRACKING_ID, i);
+        input_report_abs(data->input_dev, ABS_PRESSURE, 255);
+        input_report_key(data->input_dev, BTN_TOUCH, 1);		
+        input_report_abs(data->input_dev, ABS_MT_TRACKING_ID, i);
 
 		#ifdef _SUPPORT_SHAPE_TOUCH_
 		input_report_abs(data->input_dev, ABS_MT_COMPONENT, data->fingers[i].component);
@@ -1469,7 +1471,9 @@ void TSP_forced_release_for_call(void)
 		input_report_abs(copy_data->input_dev, ABS_MT_POSITION_Y, copy_data->fingers[i].y);
 		input_report_abs(copy_data->input_dev, ABS_MT_TOUCH_MAJOR, copy_data->fingers[i].z);
 		input_report_abs(copy_data->input_dev, ABS_MT_WIDTH_MAJOR, copy_data->fingers[i].w);
-		input_report_abs(copy_data->input_dev, ABS_MT_TRACKING_ID, i);
+		input_report_abs(copy_data->input_dev, ABS_PRESSURE, 255);
+        input_report_key(copy_data->input_dev, BTN_TOUCH, 1);		
+        input_report_abs(copy_data->input_dev, ABS_MT_TRACKING_ID, i);
 
 		input_mt_sync(copy_data->input_dev);
 
@@ -2723,6 +2727,7 @@ static int __devinit mxt224_probe(struct i2c_client *client, const struct i2c_de
 	input_set_abs_params(input_dev, ABS_MT_POSITION_Y, pdata->min_y,pdata->max_y, 0, 0);
 	input_set_abs_params(input_dev, ABS_MT_TOUCH_MAJOR, pdata->min_z,pdata->max_z, 0, 0);
 	input_set_abs_params(input_dev, ABS_MT_WIDTH_MAJOR, pdata->min_w,pdata->max_w, 0, 0);
+    input_set_abs_params(input_dev, ABS_PRESSURE, 0, 255, 0, 0);
 	input_set_abs_params(input_dev, ABS_MT_TRACKING_ID, 0,data->num_fingers - 1, 0, 0);
 	
 #ifdef _SUPPORT_SHAPE_TOUCH_
