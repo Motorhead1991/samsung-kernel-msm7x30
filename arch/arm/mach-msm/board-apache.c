@@ -5112,9 +5112,7 @@ static int lcdc_panel_power(int on)
 {
 	int flag_on = !!on;
 	static int lcdc_power_save_on;
-
-	return 0;	
-
+	
 	if (lcdc_power_save_on == flag_on)
 		return 0;
 
