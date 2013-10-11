@@ -1891,7 +1891,7 @@ static struct platform_device msm_camera_sensor_sr030pc30 = {
 };
 #endif
 
-#ifdef CONFIG_SR130PC10
+#ifdef CONFIG_SENSOR_SR130PC10
 static struct msm_camera_sensor_flash_data flash_sr130pc10 = {
 	.flash_type = MSM_CAMERA_FLASH_NONE,
 	.flash_src  = &msm_flash_src_pwm
@@ -6057,7 +6057,7 @@ static struct platform_device *devices[] __initdata = {
 #ifdef CONFIG_SENSOR_SR030PC30
 	&msm_camera_sensor_sr030pc30,
 #endif
-#ifdef CONFIG_SENSOR_SR130PC10
+#if defined (CONFIG_SENSOR_SR130PC10)
 	&msm_camera_sensor_sr130pc10,
 #endif
 #ifdef CONFIG_MT9T013
