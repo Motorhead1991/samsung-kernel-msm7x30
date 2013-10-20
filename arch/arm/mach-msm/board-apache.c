@@ -6213,15 +6213,13 @@ qup_i2c_gpio_config(int adap_id, int config_type)
 		printk(KERN_ERR "QUP GPIO enable failed: %d\n", rc);
 	/*This needs to be enabled only for OEMS*/
 #ifndef CONFIG_QUP_EXCLUSIVE_TO_CAMERA
-/*
-	if (!IS_ERR_OR_NULL(qup_vreg)) {
-		rc = regulator_enable(qup_vreg);
+	if (qup_vreg) {
+		int rc = regulator_set_voltage(qup_vreg, 1800000, 1800000);
 		if (rc) {
-			pr_err("%s: regulator_enable failed: %d\n",
+			pr_err("%s: regulator_set_voltage failed: %d\n",
 			__func__, rc);
 		}
 	}
-*/
 #endif
 }
 
