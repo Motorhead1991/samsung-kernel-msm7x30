@@ -1973,6 +1973,8 @@ static struct platform_device msm_vpe_device = {
 };
 #endif
 
+#endif
+
 #ifdef CONFIG_MSM_GEMINI
 static struct resource msm_gemini_resources[] = {
 	{
@@ -1993,7 +1995,6 @@ static struct platform_device msm_gemini_device = {
 	.num_resources  = ARRAY_SIZE(msm_gemini_resources),
 };
 #endif
-#endif /*CONFIG_MSM_CAMERA*/
 
 static struct platform_device msm_vibrator_device = {
 	.name 		    = "msm_vibrator",
