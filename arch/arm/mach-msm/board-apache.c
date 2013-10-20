@@ -1520,26 +1520,61 @@ static uint32_t camera_on_gpio_table[] = {
 #endif	
 };
 
+static uint32_t camera_off_gpio_fluid_table[] = {
+	/* FLUID: CAM_VGA_RST_N */
+	GPIO_CFG(31, 0, GPIO_CFG_OUTPUT, GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA),
+	/* FLUID: Disable CAMIF_STANDBY */
+	GPIO_CFG(143, 0, GPIO_CFG_OUTPUT, GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA)
+};
+
+static uint32_t camera_on_gpio_fluid_table[] = {
+	/* FLUID: CAM_VGA_RST_N */
+	GPIO_CFG(31, 0, GPIO_CFG_OUTPUT, GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA),
+	/* FLUID: Disable CAMIF_STANDBY */
+	GPIO_CFG(143, 1, GPIO_CFG_OUTPUT, GPIO_CFG_PULL_UP, GPIO_CFG_2MA)
+};
+
+static void config_gpio_table(uint32_t *table, int len)
+{
+	int n, rc;
+	for (n = 0; n < len; n++) {
+		rc = gpio_tlmm_config(table[n], GPIO_CFG_ENABLE);
+		if (rc) {
+			pr_err("%s: gpio_tlmm_config(%#x)=%d\n",
+				__func__, table[n], rc);
+			break;
+		}
+	}
+}
+
 static int config_camera_on_gpios(void)
 {
+	printk("[CAMDRV] config_camera_on_gpios \n");
 	config_gpio_table(camera_on_gpio_table,
 		ARRAY_SIZE(camera_on_gpio_table));
-
 #ifdef NOT_USE
 	if (adie_get_detected_codec_type() != TIMPANI_ID)
 		/* GPIO1 is shared also used in Timpani RF card so
 		only configure it for non-Timpani RF card */
 		config_gpio_table(camera_on_vcm_gpio_table,
 			ARRAY_SIZE(camera_on_vcm_gpio_table));
-#endif
+
+	if (machine_is_msm7x30_fluid()) {
+		config_gpio_table(camera_on_gpio_fluid_table,
+			ARRAY_SIZE(camera_on_gpio_fluid_table));
+		/* FLUID: turn on 5V booster */
+		gpio_set_value(
+			PM8058_GPIO_PM_TO_SYS(PMIC_GPIO_FLASH_BOOST_ENABLE), 1);
+	}
+#endif	
 	return 0;
 }
 
 static void config_camera_off_gpios(void)
 {
+		printk("[CAMDRV] config_camera_off_gpios \n");
 	config_gpio_table(camera_off_gpio_table,
 		ARRAY_SIZE(camera_off_gpio_table));
-
 #ifdef NOT_USE
 	if (adie_get_detected_codec_type() != TIMPANI_ID)
 		/* GPIO1 is shared also used in Timpani RF card so
@@ -1554,7 +1589,7 @@ static void config_camera_off_gpios(void)
 		gpio_set_value(
 			PM8058_GPIO_PM_TO_SYS(PMIC_GPIO_FLASH_BOOST_ENABLE), 0);
 	}
-#endif
+#endif	
 }
 
 struct resource msm_camera_resources[] = {
@@ -1899,8 +1934,8 @@ static struct msm_camera_sensor_flash_data flash_sr130pc10 = {
 static struct msm_camera_sensor_info msm_camera_sensor_sr130pc10_data = {
 	.sensor_name    = "sr130pc10",
 	.sensor_reset   = 0,
-	.sensor_pwd     = 85,
-	.vcm_pwd        = 1,
+	.sensor_pwd     = 0,
+	.vcm_pwd        = 0,
 	.vcm_enable     = 0,
 	.pdata          = &msm_camera_device_data,
 	.resource       = msm_camera_resources,
