@@ -193,7 +193,7 @@ struct mdp_img {
 };
 
 /*
- * {3x3} + {3} ccs matrix
+ * {3x3}+{3} ccs matrix
  */
 
 #define MDP_CCS_RGB2YUV 	0
