@@ -4715,7 +4715,7 @@ static void config_lcdc_gpio_table(uint32_t *table, int len, unsigned enable)
 	}
 }
 
-static void lcdc_s6d04m0_config_gpios(int enable)
+static void lcdc_config_gpios(int enable)
 {
 	config_lcdc_gpio_table((uint32_t *)lcdc_gpio_config_data,
 		ARRAY_SIZE(lcdc_gpio_config_data), enable);
@@ -4724,7 +4724,7 @@ static void lcdc_s6d04m0_config_gpios(int enable)
 
 static struct msm_panel_common_pdata lcdc_panel_data = {
 #ifndef CONFIG_SPI_QSD
-	.panel_config_gpio = lcdc_s6d04m0_config_gpios,
+	.panel_config_gpio = lcdc_config_gpios,
 	.gpio_num          = lcdc_gpio_array_num,
 #endif
 };
