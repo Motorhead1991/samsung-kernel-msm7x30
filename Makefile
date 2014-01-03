@@ -195,7 +195,7 @@ SUBARCH := arm
 ccache := /usr/bin/ccache
 export KBUILD_BUILDHOST := $(SUBARCH)
 ARCH		?= $(SUBARCH)
-CROSS_COMPILE	?= $(ccache) /home/motorhead/Toolchain/arm-eabi-4.6/bin/arm-eabi-
+CROSS_COMPILE	?= $(ccache) /home/motorhead/toolchain/arm-eabi-4.6/bin/arm-eabi-
 
 # Architecture as present in compile.h
 UTS_MACHINE 	:= $(ARCH)
